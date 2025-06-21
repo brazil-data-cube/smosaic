@@ -6,6 +6,23 @@ from tqdm import tqdm
 from pystac_client import Client
 from importlib.resources import files
 import json
+import rasterio
+import numpy as np
+from rasterio.merge import merge
+from rasterio.mask import mask
+from shapely.geometry import box
+from shapely.geometry import MultiPolygon
+from shapely.geometry import mapping
+from shapely.geometry import shape
+from shapely.ops import transform
+from math import cos, pi
+import pyproj
+from pyproj import Transformer
+import shapely
+import rasterio
+from rasterio.merge import merge
+from rasterio.warp import calculate_default_transform, reproject, Resampling
+import numpy as np
 
 cloud_dict = {
     'S2-16D-2':{
@@ -159,8 +176,241 @@ def collection_get_data(datacube):
             else:
                 download_stream(os.path.join(collection+"/"+tile+"/"+band, os.path.basename(item.assets[band].href)), response, total_size=item.to_dict()['assets'][band]["bdc:size"])
 
-def mosaic(collection, output_dir, start_year, start_month, start_day, duration_months, bands, mosaic_method, geom=None, grid=None, grid_id=None):
+def create_multipolygon(polygons, crs=None):
+    """
+    Create a MultiPolygon from a list of Polygons with CRS support.
+    
+    Args:
+        polygons: List of Shapely Polygon objects
+        crs: Optional CRS (Coordinate Reference System)
+        
+    Returns:
+        GeoDataFrame containing the MultiPolygon with CRS
+    """
+    # Create MultiPolygon
+    multipoly = MultiPolygon(polygons)
+    
+    # Create GeoDataFrame
+    gdf = gpd.GeoDataFrame(geometry=[multipoly], crs=crs)
+    
+    return gdf
+    
+def clip_raster(input_raster_path, output_folder, clip_geometry, output_filename=None):
+    """
+    Clip a raster using a Shapely geometry and save the result to another folder.
+    
+    Parameters:
+    - input_raster_path: Path to the input raster file
+    - output_folder: Folder where the clipped raster will be saved
+    - clip_geometry: Shapely geometry object used for clipping
+    - output_filename: Optional output filename (defaults to input filename with '_clipped' suffix)
+    
+    Returns:
+    - Path to the saved clipped raster
+    """
+    
+    # Create output folder if it doesn't exist
+    os.makedirs(output_folder, exist_ok=True)
+    
+    # Determine output filename
+    if output_filename is None:
+        base_name = os.path.basename(input_raster_path)
+        name, ext = os.path.splitext(base_name)
+        output_filename = f"{name}_clipped{ext}"
+    
+    output_path = os.path.join(output_folder, output_filename)
+    
+    # Open the input raster
+    with rasterio.open(input_raster_path) as src:
+        # Clip the raster using the geometry
+        out_image, out_transform = mask(
+            src, 
+            [mapping(clip_geometry)],  # Convert Shapely geometry to GeoJSON-like dict
+            crop=True,
+            all_touched=True
+        )
+        
+        # Copy the metadata from the source raster
+        out_meta = src.meta.copy()
+        
+        # Update metadata with new transform and dimensions
+        out_meta.update({
+            "height": out_image.shape[1],
+            "width": out_image.shape[2],
+            "transform": out_transform
+        })
+        
+        # Write the clipped raster to disk
+        with rasterio.open(output_path, "w", **out_meta) as dest:
+            dest.write(out_image)
+            
+    print(f"Clipped raster saved to: {output_path}")
+    return output_path
+    
+def count_pixels_with_value(raster_path, target_value):
+    """
+    Counts the number of pixels in a raster that match a specific value.
+    
+    Args:
+        raster_path (str): Path to the raster file
+        target_value (int/float): The pixel value to count
+        
+    Returns:
+        int: Count of pixels with the target value
+    """
+    # Open the raster file
+    with rasterio.open(raster_path) as src:
+        # Read all data (assuming single-band raster)
+        data = src.read(1)
+        
+        # Count pixels with the target value
+        count = (data == target_value).sum()
+        
+        return dict(total=data.size, count=count)
+    
+def get_dataset_extents(datasets):
+    extents = []
+    for ds in datasets:
+        # Get the bounding box coordinates
+        left, bottom, right, top = ds.bounds
+        
+        # Create a shapely Polygon representing the extent
+        extent = box(left, bottom, right, top)
+        
+        data_proj = ds.crs
+        proj_converter = Transformer.from_crs(data_proj, pyproj.CRS.from_epsg(4326), always_xy=True).transform
+        reproj_bbox = transform(proj_converter, extent)
+        
+        # Store both the geometry and CRS
+        extents.append(reproj_bbox)
+        
+    return MultiPolygon(extents).bounds
 
+def merge_tifs(tif_files, output_path, extent=None):
+    """
+    Merge a list of TIFF files into one mosaic, reprojecting to EPSG:4326.
+    
+    Parameters:
+    -----------
+    tif_files : list
+        List of paths to input TIFF files
+    output_path : str
+        Path to save the merged output TIFF
+    extent : tuple (optional)
+        Bounding box for output in format (minx, miny, maxx, maxy) in EPSG:4326.
+        If None, will use the combined extent of all input files.
+    """
+    
+    # First, reproject all files to EPSG:4326 and collect their bounds
+    reprojected_files = []
+    bounds = []
+    
+    for tif in tif_files:
+        with rasterio.open(tif) as src:
+            # Get the bounds in source CRS
+            left, bottom, right, top = src.bounds
+            src_extent = box(left, bottom, right, top)
+            
+            # Create transformer to convert to WGS84
+            proj_converter = Transformer.from_crs(
+                src.crs, 
+                'EPSG:4326', 
+                always_xy=True
+            ).transform
+            
+            # Transform the bounding box to WGS84
+            reproj_bbox = transform(proj_converter, src_extent)
+            bounds.append(reproj_bbox.bounds)
+            
+            # Reproject the file to WGS84
+            dst_crs = 'EPSG:4326'
+            
+            # Calculate the transform for the reprojected image (renamed to dst_transform)
+            dst_transform, width, height = calculate_default_transform(
+                src.crs, dst_crs, src.width, src.height, *src.bounds
+            )
+            
+            # Create a temporary in-memory file for the reprojected data
+            reproj_data = np.zeros((src.count, height, width), dtype=src.dtypes[0])
+            
+            reproject(
+                source=rasterio.band(src, range(1, src.count + 1)),
+                destination=reproj_data,
+                src_transform=src.transform,
+                src_crs=src.crs,
+                dst_transform=dst_transform,
+                dst_crs=dst_crs,
+                resampling=Resampling.nearest,
+                nodata=0
+            )
+            
+            # Create a temporary file path
+            temp_path = f'temp_{os.path.basename(tif)}'
+            reprojected_files.append(temp_path)
+            
+            # Write the reprojected data to a temporary file
+            with rasterio.open(
+                temp_path,
+                'w',
+                driver='GTiff',
+                height=height,
+                width=width,
+                count=src.count,
+                dtype=reproj_data.dtype,
+                crs=dst_crs,
+                transform=dst_transform,
+                nodata=-9999
+            ) as dst:
+                dst.write(reproj_data)
+    
+    # Determine the output bounds if not provided
+    if extent is None:
+        minx = min(b[0] for b in bounds)
+        miny = min(b[1] for b in bounds)
+        maxx = max(b[2] for b in bounds)
+        maxy = max(b[3] for b in bounds)
+        extent = (minx, miny, maxx, maxy)
+    else:
+        minx, miny, maxx, maxy = extent
+    
+    # Open all reprojected files
+    src_files_to_mosaic = []
+    for f in reprojected_files:
+        src = rasterio.open(f)
+        src_files_to_mosaic.append(src)
+    
+    # Merge all files
+    mosaic, out_trans = merge(src_files_to_mosaic, bounds=extent)
+    
+    # Write the merged file
+    out_meta = src.meta.copy()
+    out_meta.update({
+        "driver": "GTiff",
+        "height": mosaic.shape[1],
+        "width": mosaic.shape[2],
+        "transform": out_trans,
+        "crs": 'EPSG:4326'
+    })
+    
+    with rasterio.open(output_path, "w", **out_meta) as dest:
+        dest.write(mosaic)
+    
+    print(f"Successfully merged {len(src_files_to_mosaic)} files to {output_path}")
+    
+    # Close all files and clean up temporary files
+    for src in src_files_to_mosaic:
+        src.close()
+    
+    for f in reprojected_files:
+        try:
+            os.remove(f)
+        except:
+            pass
+    
+    return output_path
+
+def mosaic(data_dir, collection, output_dir, start_year, start_month, start_day, duration_months, bands, mosaic_method, geom=None, grid=None, grid_id=None):
+    
     #bdc_grids_data = load_json()
     #selected_tile = ''
     #for g in bdc_grids_data['grids']:
@@ -170,4 +420,34 @@ def mosaic(collection, output_dir, start_year, start_month, start_day, duration_
     #                selected_tile = tile
     #geometry = selected_tile['properties']['geometry']
     
-    print('Done!')
+    if (mosaic_method=='lcf'):
+        data_dir = os.path.join(data_dir+'/'+collection)
+       
+        lcf_list = []
+        
+        for path in os.listdir(data_dir):
+            scenes_list = []
+            for file in os.listdir(os.path.join(data_dir, path, 'CMASK')):
+                pixel_count = count_pixels_with_value(os.path.join(data_dir, path, 'CMASK', file), 127)
+                scenes_list.append(dict(date=file.split("_")[3], clean_percentage=float(pixel_count['count']/pixel_count['total']), scene=path, file=''))
+            for file in os.listdir(os.path.join(data_dir, path, bands[0])):
+                next((item.update(file=os.path.join(data_dir, path, bands[0], file)) for item in scenes_list if item['date'] == file.split("_")[3]), None)
+            sorted_data = sorted(scenes_list, key=lambda x: x['clean_percentage'], reverse=True)
+            #print(sorted_data)
+            lcf_list.append(sorted_data[0])
+        
+        tif_files = []
+        for file in lcf_list:
+            tif_files.append(file['file'])  
+            
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+        output_file = os.path.join(output_dir, "mosaic-amazonia-brazil-2m.tif")  
+        
+        datasets = [rasterio.open(file) for file in tif_files]        
+
+        extents = get_dataset_extents(datasets)
+        
+        merge_tifs(tif_files, output_file, extents)
+        
+        clipped_path = clip_raster(input_raster_path=output_file, output_folder=output_dir,clip_geometry=geom,output_filename="clipped_mosaic-amazonia-brazil-2m.tif")
