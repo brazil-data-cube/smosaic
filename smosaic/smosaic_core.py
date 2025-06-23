@@ -6,6 +6,7 @@ from tqdm import tqdm
 from pystac_client import Client
 from importlib.resources import files
 import json
+from json import load
 import rasterio
 import numpy as np
 from rasterio.merge import merge
@@ -23,6 +24,8 @@ import rasterio
 from rasterio.merge import merge
 from rasterio.warp import calculate_default_transform, reproject, Resampling
 import numpy as np
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
 
 cloud_dict = {
     'S2-16D-2':{
@@ -56,6 +59,12 @@ coverage_proj = pyproj.CRS.from_wkt('''
 
 stac = Client.open("https://data.inpe.br/bdc/stac/v1")
 
+def open_geojson(file_path):
+    
+    geojson_data = load(open(file_path, 'r', encoding='utf-8'))
+
+    return shape(geojson_data["features"][0]["geometry"]) if geojson_data["type"] == "FeatureCollection" else shape(geojson_data)
+
 def load_json():
     json_path = files("smosaic.config") / "grids.json"
     return json.loads(json_path.read_text(encoding="utf-8"))
@@ -82,8 +91,7 @@ def collection_query(collection, start_date, end_date, tile=None, bbox=None, fre
         start_date = start_date,
         tile = tile,
         bbox = bbox,
-        end_date = end_date,
-        freq=freq
+        end_date = end_date
     )
 
 def download_stream(file_path: str, response, chunk_size=1024*64, progress=True, offset=0, total_size=None):
@@ -119,7 +127,7 @@ def download_stream(file_path: str, response, chunk_size=1024*64, progress=True,
         with open(file_path, mode) as stream:
             for chunk in response.iter_content(chunk_size):
                 stream.write(chunk)
-                progress_bar.update(chunk_size)
+                #progress_bar.update(chunk_size)
 
     file_size = os.stat(file_path).st_size
 
@@ -167,14 +175,17 @@ def collection_get_data(datacube):
             if not os.path.exists(collection+"/"+tile+"/"+band):
                 os.makedirs(collection+"/"+tile+"/"+band)
 
-    for item in item_search.items():
+    for item in tqdm(desc='Downloading... ', unit=" itens", total=item_search.matched(), iterable=item_search.items()):
         for band in bands:
             tile = item.id.split("_")[4]+'_'+item.id.split("_")[5]
             response = requests.get(item.assets[band].href, stream=True)
             if(os.path.exists(os.path.join(collection+"/"+tile+"/"+band, os.path.basename(item.assets[band].href)))):
-                print(os.path.basename(item.assets[band].href)[:30]+'...', ': Already exists')
+                #print(os.path.basename(item.assets[band].href)[:30]+'...', ': Already exists')
+                pass
             else:
                 download_stream(os.path.join(collection+"/"+tile+"/"+band, os.path.basename(item.assets[band].href)), response, total_size=item.to_dict()['assets'][band]["bdc:size"])
+
+    print(f"Successfully download {item_search.matched()} files to {os.path.join(collection)}")
 
 def create_multipolygon(polygons, crs=None):
     """
@@ -245,6 +256,7 @@ def clip_raster(input_raster_path, output_folder, clip_geometry, output_filename
             dest.write(out_image)
             
     print(f"Clipped raster saved to: {output_path}")
+    os.remove(input_raster_path)
     return output_path
     
 def count_pixels_with_value(raster_path, target_value):
@@ -285,6 +297,28 @@ def get_dataset_extents(datasets):
         extents.append(reproj_bbox)
         
     return MultiPolygon(extents).bounds
+
+def add_months_to_date(start_date, months_to_add):
+    """
+    Add months to a date and return the last day of the FINAL month.
+    (Fixes the issue where adding N months would overshoot)
+    
+    Args:
+        start_date (datetime/str): Starting date
+        months_to_add (int): Months to add (positive or negative)
+    
+    Returns:
+        datetime: Last day of the target month
+    """
+    if isinstance(start_date, str):
+        start_date = datetime.strptime(start_date, "%Y-%m-%d")
+    
+    # First calculate the target month
+    target_date = start_date + relativedelta(months=months_to_add)
+    # Then get the last day of THAT month
+    return target_date + relativedelta(day=31)
+    
+    return start_date + relativedelta(months=months_to_add)
 
 def merge_tifs(tif_files, output_path, extent=None):
     """
@@ -395,8 +429,8 @@ def merge_tifs(tif_files, output_path, extent=None):
     with rasterio.open(output_path, "w", **out_meta) as dest:
         dest.write(mosaic)
     
-    print(f"Successfully merged {len(src_files_to_mosaic)} files to {output_path}")
-    
+    print(f"Successfully merged {len(src_files_to_mosaic)} files")
+
     # Close all files and clean up temporary files
     for src in src_files_to_mosaic:
         src.close()
@@ -411,14 +445,34 @@ def merge_tifs(tif_files, output_path, extent=None):
 
 def mosaic(data_dir, collection, output_dir, start_year, start_month, start_day, duration_months, bands, mosaic_method, geom=None, grid=None, grid_id=None):
     
-    #bdc_grids_data = load_json()
-    #selected_tile = ''
-    #for g in bdc_grids_data['grids']:
-    #    if (g['name'] == grid):
-    #        for tile in g['features']:
-    #            if tile['properties']['tile'] == grid_id:
-    #                selected_tile = tile
-    #geometry = selected_tile['properties']['geometry']
+    #bdc grid
+    if (grid != None and grid_id!= None):
+        bdc_grids_data = load_json()
+        selected_tile = ''
+        for g in bdc_grids_data['grids']:
+            if (g['name'] == grid):
+                for tile in g['features']:
+                    if tile['properties']['tile'] == grid_id:
+                        selected_tile = tile
+        geometry = selected_tile['properties']['geometry']
+        bbox = shape(geometry).bounds
+
+    #geometry
+    else:
+        bbox = geom.bounds
+
+    start_date = datetime.strptime(str(start_year)+'-'+str(start_month)+'-'+str(start_day), "%Y-%m-%d").strftime("%Y-%m-%d")
+    end_date = str(add_months_to_date(start_date, duration_months-1).strftime('%Y-%m-%d'))
+
+    collection=collection_query(
+        collection="AMZ1-WFI-L4-SR-1",
+        start_date=start_date,
+        end_date=end_date,
+        bbox=bbox,
+        bands=bands
+    )   
+
+    collection_get_data(collection)
     
     if (mosaic_method=='lcf'):
         data_dir = os.path.join(data_dir+'/'+collection)
