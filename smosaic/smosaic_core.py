@@ -444,6 +444,10 @@ def merge_tifs(tif_files, output_path, extent=None):
     
     return output_path
 
+def filter_scenes(data_dir):
+    filtered_dir = data_dir
+    return filtered_dir
+
 def mosaic(data_dir, collection, output_dir, start_year, start_month, start_day, duration_months, bands, mosaic_method, geom=None, grid=None, grid_id=None):
     
     #bdc grid
@@ -476,11 +480,12 @@ def mosaic(data_dir, collection, output_dir, start_year, start_month, start_day,
     collection_get_data(dict_collection)
     
     if (mosaic_method=='lcf'):
+
         data_dir = os.path.join(data_dir+'/'+collection)
 
         lcf_list = []
         
-        for path in os.listdir(data_dir):
+        for path in filter_scenes(os.listdir(data_dir)):
             scenes_list = []
             for file in os.listdir(os.path.join(data_dir, path, 'CMASK')):
                 pixel_count = count_pixels_with_value(os.path.join(data_dir, path, 'CMASK', file), 127)
