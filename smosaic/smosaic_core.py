@@ -26,6 +26,7 @@ from rasterio.warp import calculate_default_transform, reproject, Resampling
 import numpy as np
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+from osgeo import gdal
 
 cloud_dict = {
     'S2-16D-2':{
@@ -157,7 +158,7 @@ def unzip():
             #print("An exception occurred")
             os.remove(z)
 
-def collection_get_data(datacube):
+def collection_get_data(datacube, data_dir):
     
     collection = datacube['collection']
     bbox = datacube['bbox']
@@ -179,12 +180,13 @@ def collection_get_data(datacube):
             if tile not in tiles:
                 tiles.append(tile)
                 
-    for tile in tiles:      
-        if not os.path.exists(collection+"/"+tile):
-            os.makedirs(collection+"/"+tile)
+    for tile in tiles:
+        print(data_dir+"/"+collection+"/"+tile)      
+        if not os.path.exists(data_dir+"/"+collection+"/"+tile):
+            os.makedirs(data_dir+"/"+collection+"/"+tile)
         for band in bands:
-            if not os.path.exists(collection+"/"+tile+"/"+band):
-                os.makedirs(collection+"/"+tile+"/"+band)
+            if not os.path.exists(data_dir+"/"+collection+"/"+tile+"/"+band):
+                os.makedirs(data_dir+collection+"/"+tile+"/"+band)
 
     geom_map = []
     download = False
@@ -196,15 +198,15 @@ def collection_get_data(datacube):
             response = requests.get(item.assets[band].href, stream=True)
             if not any(tile_dict["tile"] == tile for tile_dict in geom_map):
                 geom_map.append(dict(tile=tile, geometry=item.geometry))
-            if(os.path.exists(os.path.join(collection+"/"+tile+"/"+band, os.path.basename(item.assets[band].href)))):
+            if(os.path.exists(os.path.join(data_dir+"/"+collection+"/"+tile+"/"+band, os.path.basename(item.assets[band].href)))):
                 download = False
             else:
                 download = True
-                download_stream(os.path.join(collection+"/"+tile+"/"+band, os.path.basename(item.assets[band].href)), response, total_size=item.to_dict()['assets'][band]["bdc:size"])
+                download_stream(os.path.join(data_dir+"/"+collection+"/"+tile+"/"+band, os.path.basename(item.assets[band].href)), response, total_size=item.to_dict()['assets'][band]["bdc:size"])
     
     if(download):
         file_name = collection+".json"
-        with open(os.path.join(collection+"/"+file_name), 'w') as json_file:
+        with open(os.path.join(data_dir+"/"+collection+"/"+file_name), 'w') as json_file:
             json.dump(dict(collection=collection, geoms=geom_map), json_file, indent=4)
 
     print(f"Successfully download {item_search.matched()} files to {os.path.join(collection)}")
@@ -581,6 +583,25 @@ def filter_scenes(collection, data_dir, bbox):
           
     return filtered_list
 
+def generate_cog(input_folder: str, input_filename: str, compress: str = 'LZW') -> str:
+    """Generate COG file."""
+    input_file = os.path.join(input_folder, f'{input_filename}.tif')
+    output_file = os.path.join(input_folder, f'{input_filename}_COG.tif')
+
+    gdal.Translate(
+        output_file,
+        input_file,
+        options=gdal.TranslateOptions(
+            format='COG',
+            creationOptions=[
+                f'COMPRESS={compress}',
+                'BIGTIFF=IF_SAFER'
+            ],
+            outputType=gdal.GDT_Int16
+        )
+    )
+    return output_file
+
 def mosaic(name, data_dir, collection, output_dir, start_year, start_month, start_day, duration_months, bands, mosaic_method, geom=None, grid=None, grid_id=None):
     
     #grid
@@ -624,7 +645,7 @@ def mosaic(name, data_dir, collection, output_dir, start_year, start_month, star
         bands=bands
     )   
     
-    collection_get_data(dict_collection)
+    collection_get_data(dict_collection, data_dir = data_dir)
     
     if (mosaic_method=='lcf'):
 
@@ -665,3 +686,5 @@ def mosaic(name, data_dir, collection, output_dir, start_year, start_month, star
         merge_tifs(lcf_list, output_file, band, extents)
         
         clip_raster(input_raster_path=output_file, output_folder=output_dir,clip_geometry=geom,output_filename="mosaic-"+collection.split("-")[0].lower()+"-"+band.lower()+"-"+name+"-"+str(duration_months)+"m.tif")
+
+        generate_cog(input_folder=output_dir, input_filename="mosaic-"+collection.split("-")[0].lower()+"-"+bands[0].lower()+"-"+name+"-"+str(duration_months)+"m", compress='LZW')
