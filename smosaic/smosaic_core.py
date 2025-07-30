@@ -497,7 +497,7 @@ def merge_scene(sorted_data, cloud_sorted_data, scenes, collection, band, data_d
         cloud_images = [item['file'] for item in cloud_sorted_data if item.get("scene") == scene]
         temp_images = []
 
-        for i in range(0, 4): #len(images)
+        for i in range(0, len(images)):
 
             with rasterio.open(images[i]) as src:
                 image_data = src.read()  
