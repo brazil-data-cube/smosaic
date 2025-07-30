@@ -32,12 +32,14 @@ cloud_dict = {
     'S2-16D-2':{
         'cloud_band': 'SCL',
         'non_cloud_values': [4,5,6],
-        'cloud_values': [0,1,2,3,7,8,9,10,11]
+        'cloud_values': [0,1,2,3,7,8,9,10,11],
+        'no_data_value': 0
     },
     'S2_L2A-1':{
         'cloud_band': 'SCL',
         'non_cloud_values': [4,5,6],
-        'cloud_values': [0,1,2,3,7,8,9,10,11]
+        'cloud_values': [0,1,2,3,7,8,9,10,11],
+        'no_data_value': 0
     },
     'AMZ1-WFI-L4-SR-1':{
         'cloud_band': 'CMASK',
@@ -353,10 +355,8 @@ def add_months_to_date(start_date, months_to_add):
     target_date = start_date + relativedelta(months=months_to_add)
     # Then get the last day of THAT month
     return target_date + relativedelta(day=31)
-    
-    return start_date + relativedelta(months=months_to_add)
 
-def merge_tifs(tif_files, output_path, band, extent=None):
+def merge_tifs(tif_files, output_path, band, scene=None, extent=None):
     """
     Merge a list of TIFF files into one mosaic, reprojecting to EPSG:4326.
     
@@ -423,7 +423,7 @@ def merge_tifs(tif_files, output_path, band, extent=None):
             if band in cloud_bands:
                 nodata = 0 
             else:
-                nodata = 0
+                nodata = -9999
 
             # Write the reprojected data to a temporary file
             with rasterio.open(
@@ -471,9 +471,11 @@ def merge_tifs(tif_files, output_path, band, extent=None):
     
     with rasterio.open(output_path, "w", **out_meta) as dest:
         dest.write(mosaic)
+    if(scene):
+        print(f"Successfully merged {len(src_files_to_mosaic)} files for {scene} scene.")
+    else:
+        print(f"Successfully merged {len(src_files_to_mosaic)} files.")
     
-    print(f"Successfully merged {len(src_files_to_mosaic)} files")
-
     # Close all files and clean up temporary files
     for src in src_files_to_mosaic:
         src.close()
@@ -533,15 +535,15 @@ def merge_scene(sorted_data, cloud_sorted_data, scenes, collection, band, data_d
 
         extents = get_dataset_extents(datasets)
 
-        merge_tifs(temp_images, output_file, band, extents)
+        merge_tifs(temp_images, output_file, band, scene, extents)
 
         merge_files.append(output_file)
 
-        for f in temp_images:
-            try:
-                os.remove(f)
-            except:
-                pass
+        #for f in temp_images:
+        #    try:
+        #        os.remove(f)
+        #    except:
+        #       pass
 
 
     return merge_files
@@ -668,8 +670,9 @@ def mosaic(name, data_dir, collection, output_dir, start_year, start_month, star
 
         scenes = filter_scenes(collection, data_dir, bbox)
 
+        cloud = cloud_dict[collection]['cloud_band']
+        print(f"Building {cloud} mosaic using {len(scenes)} scenes from the {collection}.")
         for path in scenes:
-            cloud = cloud_dict[collection]['cloud_band']
             for file in os.listdir(os.path.join(coll_data_dir, path, cloud)):
                 pixel_count = count_pixels_with_value(os.path.join(coll_data_dir, path, cloud_dict[collection]['cloud_band'], file), cloud_dict[collection]['non_cloud_values'][0]) #por região não total
                 if (collection=="AMZ1-WFI-L4-SR-1"):
@@ -678,10 +681,10 @@ def mosaic(name, data_dir, collection, output_dir, start_year, start_month, star
                     date = file.split("_")[2].split('T')[0]
                 cloud_list.append(dict(band=cloud, date=date, clean_percentage=float(pixel_count['count']/pixel_count['total']), scene=path, file=''))
                 band_list.append(dict(band=bands[0], date=date, clean_percentage=float(pixel_count['count']/pixel_count['total']), scene=path, file=''))
-
+        
+        print(f"Building {bands[0]} mosaic using {len(scenes)} scenes from the {collection}.")
         for path in scenes:
             for band in bands_cloud:
-                print(f"Building {band} mosaic using {len(scenes)} scenes from the {collection}")
                 for file in os.listdir(os.path.join(coll_data_dir, path, band)):
                     if (collection=="AMZ1-WFI-L4-SR-1"):
                         date = file.split("_")[3]
@@ -701,18 +704,18 @@ def mosaic(name, data_dir, collection, output_dir, start_year, start_month, star
 
         lcf_list = merge_scene(sorted_data, cloud_sorted_data, scenes, collection, bands[0], data_dir)
 
-        band = bands[0]
+        # band = bands[0]
         
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
-        output_file = os.path.join(output_dir, "raw-mosaic-"+collection.split("-")[0].lower()+"-"+band.lower()+"-"+name+"-"+str(duration_months)+"m.tif")  
+        # if not os.path.exists(output_dir):
+        #     os.makedirs(output_dir)
+        # output_file = os.path.join(output_dir, "raw-mosaic-"+collection.split("-")[0].lower()+"-"+band.lower()+"-"+name+"-"+str(duration_months)+"m.tif")  
         
-        datasets = [rasterio.open(file) for file in lcf_list]        
+        # datasets = [rasterio.open(file) for file in lcf_list]        
 
-        extents = get_dataset_extents(datasets)
+        # extents = get_dataset_extents(datasets)
 
-        merge_tifs(lcf_list, output_file, band, extents)
+        # merge_tifs(lcf_list, output_file, band, name, extents)
         
-        clip_raster(input_raster_path=output_file, output_folder=output_dir,clip_geometry=geom,output_filename="mosaic-"+collection.split("-")[0].lower()+"-"+band.lower()+"-"+name+"-"+str(duration_months)+"m.tif")
+        # clip_raster(input_raster_path=output_file, output_folder=output_dir,clip_geometry=geom,output_filename="mosaic-"+collection.split("-")[0].lower()+"-"+band.lower()+"-"+name+"-"+str(duration_months)+"m.tif")
 
-        generate_cog(input_folder=output_dir, input_filename="mosaic-"+collection.split("-")[0].lower()+"-"+bands[0].lower()+"-"+name+"-"+str(duration_months)+"m", compress='LZW')
+        # generate_cog(input_folder=output_dir, input_filename="mosaic-"+collection.split("-")[0].lower()+"-"+bands[0].lower()+"-"+name+"-"+str(duration_months)+"m", compress='LZW')
