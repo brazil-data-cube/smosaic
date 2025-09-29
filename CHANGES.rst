@@ -21,6 +21,9 @@ Changes
 
 
 Version 0.0.1 (2025-06-04)
---------------------------
+------------------
 
-- 
+* **Initial Release**: First implementation of ``mosaic`` function, with ``collection_get_data``, ``get_dataset_extents``, ``merge_tifs`` and ``clip_raster`` functions.
+* Completed the smosaic introduction notebook.
+* **Sentinel 2**: Added full support for Sentinel 2 data.  🛰️
+* **COG Support**: Added output as Cloud Optimized GeoTIFFs (COGs) with RasterIO. 
