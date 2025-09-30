@@ -1,1 +1,1 @@
-from .smosaic_core import collection_query, collection_get_data, mosaic, open_geojson
+from .smosaic_core import mosaic, open_geojson

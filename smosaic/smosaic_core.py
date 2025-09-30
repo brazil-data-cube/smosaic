@@ -299,8 +299,14 @@ def clip_raster(input_raster_path, output_folder, clip_geometry, output_filename
         with rasterio.open(output_path, "w", **out_meta) as dest:
             dest.write(out_image)
             
-    print(f"Clipped raster saved to: {output_path}")
     os.remove(input_raster_path)
+
+    for f in [os.path.join(os.path.dirname(input_raster_path), f) for f in os.listdir(os.path.dirname(input_raster_path)) if f.startswith("merge_")]:
+        try:
+            os.remove(f)
+        except:
+            pass
+
     return output_path
 
 def count_pixels_with_value(raster_path, target_value):
@@ -492,7 +498,6 @@ def merge_tifs(tif_files, output_path, band, path_row=None, extent=None):
             os.remove(f)
         except:
             pass
-    
     return output_path
 
 def merge_scene(sorted_data, cloud_sorted_data, scenes, collection, band, data_dir):
@@ -619,6 +624,14 @@ def generate_cog(input_folder: str, input_filename: str, compress: str = 'LZW') 
             outputType=gdal.GDT_Int16
         )
     )
+
+    try:
+        os.remove(input_file)
+    except:
+        pass
+
+    print(f"Raster saved to: {output_file}")
+    
     return output_file
 
 def mosaic(name, data_dir, collection, output_dir, start_year, start_month, start_day, duration_months, bands, mosaic_method, geom=None, grid=None, grid_id=None):
@@ -667,24 +680,31 @@ def mosaic(name, data_dir, collection, output_dir, start_year, start_month, star
         bands=bands
     )   
     
+    collection_name = dict_collection['collection']
+
     collection_get_data(dict_collection, data_dir=data_dir)
     
     if (mosaic_method=='lcf'):
 
-        coll_data_dir = os.path.join(data_dir+'/'+collection)
-        
-        for i in range(bands):
+        coll_data_dir = os.path.join(data_dir+'/'+collection_name)
 
-            bands_cloud = [bands[i]] + [cloud_dict[collection]['cloud_band']]
-                
-            band_list = []
-            cloud_list = []                
+        for i in range(len(bands)):
+            if (i==0):
+                bands_cloud = [bands[i]] + [cloud_dict[collection_name]['cloud_band']]
+                cloud_list = []   
+            else:
+                bands_cloud = [bands[i]] 
+            
+            band_list = []             
             sorted_data = []
 
-            scenes = filter_scenes(collection, data_dir, bbox)
+            scenes = filter_scenes(collection_name, data_dir, bbox)
 
             cloud = cloud_dict[collection]['cloud_band']
-            print(f"Building {cloud} mosaic using {len(scenes)} scenes from the {collection}.")
+
+            if (i==0):
+                print(f"Building {cloud} mosaic using {len(scenes)} scenes from the {collection}.")
+                
             for path in scenes:
                 for file in os.listdir(os.path.join(coll_data_dir, path, cloud)):
                     pixel_count = count_pixels_with_value(os.path.join(coll_data_dir, path, cloud_dict[collection]['cloud_band'], file), cloud_dict[collection]['non_cloud_values'][0]) #por região não total
@@ -694,46 +714,47 @@ def mosaic(name, data_dir, collection, output_dir, start_year, start_month, star
                         date = file.split("_")[2].split('T')[0]
                     cloud_list.append(dict(band=cloud, date=date, clean_percentage=float(pixel_count['count']/pixel_count['total']), scene=path, file=''))
                     band_list.append(dict(band=bands[i], date=date, clean_percentage=float(pixel_count['count']/pixel_count['total']), scene=path, file=''))
-            
-            print(f"Building {bands[i]} mosaic using {len(scenes)} scenes from the {collection}.")
+
+            print(f"Building {bands[i]} mosaic using {len(scenes)} scenes from the {collection_name}.")
             
             bands_links = []
             cloud_links = []
-
             for path in scenes:
                 for band in bands_cloud:
                     for file in os.listdir(os.path.join(coll_data_dir, path, band)):
-                        if (collection=="AMZ1-WFI-L4-SR-1"):
+                        if (collection_name=="AMZ1-WFI-L4-SR-1"):
                             date = file.split("_")[3]
                         else:
                             date = file.split("_")[2].split('T')[0]
-                        if(band == cloud_dict[collection]['cloud_band']):
+                        if(band == cloud_dict[collection_name]['cloud_band']):
                             for item in cloud_list:
                                 if item['date'] == date:
                                     item['file'] = os.path.join(coll_data_dir, path, band, file)
-                                    cloud_links.append(dict(band=band, date=date, clean_percentage=item['clean_percentage'], scene=path, file=os.path.join(coll_data_dir, path, band, file)))
+                                    if (i==0):
+                                        cloud_links.append(dict(band=band, date=date, clean_percentage=item['clean_percentage'], scene=path, file=os.path.join(coll_data_dir, path, band, file)))
                         else:
                             for item in band_list:
                                 if item['date'] == date:
                                     bands_links.append(dict(band=band, date=date, clean_percentage=item['clean_percentage'], scene=path, file=os.path.join(coll_data_dir, path, band, file)))
 
             sorted_data = sorted(bands_links, key=lambda x: x['clean_percentage'], reverse=True)
-            cloud_sorted_data = sorted(cloud_links, key=lambda x: x['clean_percentage'], reverse=True)
 
-            lcf_list = merge_scene(sorted_data, cloud_sorted_data, scenes, collection, bands[i], data_dir)
+            if (i==0):
+                cloud_sorted_data = sorted(cloud_links, key=lambda x: x['clean_percentage'], reverse=True)
+            lcf_list = merge_scene(sorted_data, cloud_sorted_data, scenes, collection_name, bands[i], data_dir)
 
             band = bands[i]
-            
+
             if not os.path.exists(output_dir):
                 os.makedirs(output_dir)
-            output_file = os.path.join(output_dir, "raw-mosaic-"+collection.split("-")[0].lower()+"-"+band.lower()+"-"+name+"-"+str(duration_months)+"m.tif")  
+            output_file = os.path.join(output_dir, "raw-mosaic-"+collection_name.split("-")[0].lower()+"-"+band.lower()+"-"+name+"-"+str(duration_months)+"m.tif")  
             
             datasets = [rasterio.open(file) for file in lcf_list]        
-
+            
             extents = get_dataset_extents(datasets)
-
+            
             merge_tifs(tif_files=lcf_list, output_path=output_file, band=band, path_row=name, extent=extents)
             
-            clip_raster(input_raster_path=output_file, output_folder=output_dir,clip_geometry=geom,output_filename="mosaic-"+collection.split("-")[0].lower()+"-"+band.lower()+"-"+name+"-"+str(duration_months)+"m.tif")
-
-            generate_cog(input_folder=output_dir, input_filename="mosaic-"+collection.split("-")[0].lower()+"-"+bands[i].lower()+"-"+name+"-"+str(duration_months)+"m", compress='LZW')
+            clip_raster(input_raster_path=output_file, output_folder=output_dir, clip_geometry=geom,output_filename="mosaic-"+collection_name.split("-")[0].lower()+"-"+band.lower()+"-"+name+"-"+str(duration_months)+"m.tif")
+            
+            generate_cog(input_folder=output_dir, input_filename="mosaic-"+collection_name.split("-")[0].lower()+"-"+bands[i].lower()+"-"+name+"-"+str(duration_months)+"m", compress='LZW')
