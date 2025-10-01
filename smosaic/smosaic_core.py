@@ -677,8 +677,7 @@ def mosaic(name, data_dir, stac_url, collection, output_dir, start_year, start_m
 
             cloud = cloud_dict[collection]['cloud_band']
 
-            if (i==0):
-                print(f"Building {cloud} mosaic using {len(scenes)} scenes from the {collection}.")
+            #print(f"Building {cloud} mosaic using {len(scenes)} scenes from the {collection}.")
                 
             for path in scenes:
                 for file in os.listdir(os.path.join(coll_data_dir, path, cloud)):
@@ -732,8 +731,8 @@ def mosaic(name, data_dir, stac_url, collection, output_dir, start_year, start_m
             
             merge_tifs(tif_files=lcf_list, output_path=output_file, band=band, path_row=name, extent=extents)
             
-            clip_raster(input_raster_path=output_file, output_folder=output_dir, clip_geometry=geom,output_filename="mosaic-"+collection_name.split("-")[0].lower()+"-"+band.lower()+"-"+name+"-"+str(duration_months)+"m.tif")
+            clip_raster(input_raster_path=output_file, output_folder=output_dir, clip_geometry=geom,output_filename="mosaic-"+collection_name.split("-")[0].lower()+"-"+name.lower()+"-"+str(duration_months)+"m"+"-"+bands[i].lower()+"-"+str(start_date).replace("-", "")+'_'+str(end_date).replace("-", "")+".tif")
             
-            generate_cog(input_folder=output_dir, input_filename="mosaic-"+collection_name.split("-")[0].lower()+"-"+bands[i].lower()+"-"+name+"-"+str(duration_months)+"m", compress='LZW')
+            generate_cog(input_folder=output_dir, input_filename="mosaic-"+collection_name.split("-")[0].lower()+"-"+name.lower()+"-"+str(duration_months)+"m"+"-"+bands[i].lower()+"-"+str(start_date).replace("-", "")+'_'+str(end_date).replace("-", ""), compress='LZW')
 
             clean_dir(data_dir)
