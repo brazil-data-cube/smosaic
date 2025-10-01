@@ -12,6 +12,12 @@ import importlib
 import numpy as np
 import pystac_client
 
+from osgeo import gdal
+from shapely.ops import transform as shapely_transform
+from rasterio.merge import merge as rasterio_merge
+from rasterio.mask import mask as rasterio_mask
+from rasterio.warp import calculate_default_transform, reproject, Resampling
+
 cloud_dict = {
     'S2-16D-2':{
         'cloud_band': 'SCL',
@@ -266,7 +272,7 @@ def clip_raster(input_raster_path, output_folder, clip_geometry, output_filename
     output_path = os.path.join(output_folder, output_filename)
     
     with rasterio.open(input_raster_path) as src:
-        out_image, out_transform = rasterio.mask (
+        out_image, out_transform = rasterio_mask (
             src, 
             [shapely.geometry.mapping(clip_geometry)],  
             crop=True,
@@ -316,7 +322,7 @@ def get_dataset_extents(datasets):
         
         data_proj = ds.crs
         proj_converter = pyproj.Transformer.from_crs(data_proj, pyproj.CRS.from_epsg(4326), always_xy=True).transform
-        reproj_bbox = shapely.ops.transform(proj_converter, extent)
+        reproj_bbox = shapely_transform(proj_converter, extent)
         
         extents.append(reproj_bbox)
         
@@ -371,25 +377,25 @@ def merge_tifs(tif_files, output_path, band, path_row=None, extent=None):
                 always_xy=True
             ).transform
             
-            reproj_bbox = shapely.ops.transform(proj_converter, src_extent)
+            reproj_bbox = shapely_transform(proj_converter, src_extent)
             bounds.append(reproj_bbox.bounds)
             
             dst_crs = 'EPSG:4326'
             
-            dst_transform, width, height = rasterio.warp.calculate_default_transform(
+            dst_transform, width, height = calculate_default_transform(
                 src.crs, dst_crs, src.width, src.height, *src.bounds
             )
             
             reproj_data = np.zeros((src.count, height, width), dtype=src.dtypes[0])
             
-            rasterio.warp.reproject(
+            reproject(
                 source=rasterio.band(src, range(1, src.count + 1)),
                 destination=reproj_data,
                 src_transform=src.transform,
                 src_crs=src.crs,
                 dst_transform=dst_transform,
                 dst_crs=dst_crs,
-                resampling=rasterio.warp.Resampling.nearest,
+                resampling=Resampling.nearest,
                 nodata=0
             )
             
@@ -431,7 +437,7 @@ def merge_tifs(tif_files, output_path, band, path_row=None, extent=None):
         src = rasterio.open(f)
         src_files_to_mosaic.append(src)
     
-    mosaic, out_trans = rasterio.merge(src_files_to_mosaic, bounds=extent)
+    mosaic, out_trans = rasterio_merge(src_files_to_mosaic, bounds=extent)
     
     out_meta = src.meta.copy()
     out_meta.update({
@@ -460,10 +466,9 @@ def merge_tifs(tif_files, output_path, band, path_row=None, extent=None):
             pass
     return output_path
 
-def merge_scene(sorted_data, cloud_sorted_data, scenes, collection, band, data_dir):
-    
-    merge_files = []
+def merge_scene(sorted_data, cloud_sorted_data, scenes, collection_name, band, data_dir):
 
+    merge_files = []
     for scene in scenes:
 
         images =  [item['file'] for item in sorted_data if item.get("scene") == scene]
@@ -482,9 +487,9 @@ def merge_scene(sorted_data, cloud_sorted_data, scenes, collection, band, data_d
                 cloud_mask = mask_src.read(
                     1,  
                     out_shape=(height, width), 
-                    resampling=rasterio.enums.Resampling.nearest  
+                    resampling=Resampling.nearest  
                 )
-            clear_mask = np.isin(cloud_mask, cloud_dict[collection]['non_cloud_values'])
+            clear_mask = np.isin(cloud_mask, cloud_dict[collection_name]['non_cloud_values'])
 
             if 'nodata' not in profile or profile['nodata'] is None:
                 profile['nodata'] = 0  
@@ -502,10 +507,10 @@ def merge_scene(sorted_data, cloud_sorted_data, scenes, collection, band, data_d
 
         temp_images.append(images[0])
 
-        output_file = os.path.join(data_dir, "merge_"+collection.split('-')[0]+"_"+scene+"_"+band+".tif")  
+        output_file = os.path.join(data_dir, "merge_"+collection_name.split('-')[0]+"_"+scene+"_"+band+".tif")  
 
         datasets = [rasterio.open(file) for file in temp_images]  
-
+        
         extents = get_dataset_extents(datasets)
 
         merge_tifs(tif_files=temp_images, output_path=output_file, band=band, path_row=scene, extent=extents)
@@ -582,16 +587,16 @@ def generate_cog(input_folder: str, input_filename: str, compress: str = 'LZW') 
     input_file = os.path.join(input_folder, f'{input_filename}.tif')
     output_file = os.path.join(input_folder, f'{input_filename}_COG.tif')
 
-    osgeo.gdal.Translate(
+    gdal.Translate(
         output_file,
         input_file,
-        options=osgeo.gdal.TranslateOptions(
+        options=gdal.TranslateOptions(
             format='COG',
             creationOptions=[
                 f'COMPRESS={compress}',
                 'BIGTIFF=IF_SAFER'
             ],
-            outputType=osgeo.gdal.GDT_Int16
+            outputType=gdal.GDT_Int16
         )
     )
 
@@ -711,12 +716,14 @@ def mosaic(name, data_dir, stac_url, collection, output_dir, start_year, start_m
 
             if (i==0):
                 cloud_sorted_data = sorted(cloud_links, key=lambda x: x['clean_percentage'], reverse=True)
+            
             lcf_list = merge_scene(sorted_data, cloud_sorted_data, scenes, collection_name, bands[i], data_dir)
 
             band = bands[i]
 
             if not os.path.exists(output_dir):
                 os.makedirs(output_dir)
+
             output_file = os.path.join(output_dir, "raw-mosaic-"+collection_name.split("-")[0].lower()+"-"+band.lower()+"-"+name+"-"+str(duration_months)+"m.tif")  
             
             datasets = [rasterio.open(file) for file in lcf_list]        
