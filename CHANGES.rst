@@ -23,10 +23,12 @@ Changes
 ------------------
 
 * **Multi-band Support**: It is now possible to create an ``xarray`` data cube with more than one band.
-* **Refactored library code**: Adjusted imports and the use of libraries in the code, removing imports of individual functions.
+* **Refactored Library Code**: Adjusted imports and the use of libraries in the code, removing imports of individual functions.
 * **New Notebooks**: Added several example notebooks:
     * ``smosaic-introduction.ipynb``: A complete example of creating a Sentinel-2 multi-band mosaic for Luis Eduardo Magalhaes - BA.
-* **Refactor mosaic function**:  Standardize mosaic output filename structure.
+    * ``smosaic-data-cube.ipynb``: A complete example of creating a Sentinel-2 10 days data cube for a given bbox.
+* **Refactor Mosaic Function**:  Standardize mosaic output filename structure.
+* **Data Cube Support**:  Added support for data cube generation using ``end_year``, ``end_month``, ``end_day`` and ``duration_days`` parameters.
 
 
 Version 0.0.1 (2025-06-04)
