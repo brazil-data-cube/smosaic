@@ -28,7 +28,7 @@ Changes
     * ``smosaic-introduction.ipynb``: A complete example of creating a Sentinel-2 multi-band mosaic for Luis Eduardo Magalhaes - BA.
     * ``smosaic-data-cube.ipynb``: A complete example of creating a Sentinel-2 10 days data cube for a given bbox.
 * **Data Cube Support**:  Added support for data cube generation using ``end_year``, ``end_month``, ``end_day`` and ``duration_days`` parameters.
-* **Refactor Mosaic Function**: Completely refactored mosaic function to ensure the ``merge_scene`` function always work with the correct number of images. 
+* **Refactor Mosaic Function**: Completely refactored ``mosaic`` function to ensure the ``merge_scene`` function always work with the correct number of images. 
 
 
 Version 0.0.1 (2025-06-04)
