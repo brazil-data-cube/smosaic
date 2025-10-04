@@ -471,8 +471,6 @@ def merge_tifs(tif_files, output_path, band, path_row=None, extent=None):
 
 def merge_scene(sorted_data, cloud_sorted_data, scenes, collection_name, band, data_dir):
 
-    print(dict(sorted_data=len(sorted_data), cloud_sorted_data=len(cloud_sorted_data), scenes=len(scenes)))
-    
     merge_files = []
     for scene in scenes:
 
@@ -624,33 +622,7 @@ def mosaic(name, data_dir, stac_url, collection, output_dir, start_year, start_m
         tuple_bbox = tuple(map(float, bbox.split(',')))
         geom = shapely.geometry.box(*tuple_bbox)
         bbox = geom.bounds
-    
-    # grid
-    elif (grid != None and grid_id!= None):
-        if (grid == "br_states"):
-            br_states = load_jsons("states")
-            
-            state_code = grid_id.upper()
-            
-            for feature in br_states['features']:
-                if feature['id'] == state_code:
-                    geom = feature['geometry']
-                    bbox = shapely.geometry.shape(geom).bounds
-                    geom = shapely.geometry.shape(geom["features"][0]["geometry"]) if geom["type"] == "FeatureCollection" else shapely.geometry.shape(geom)
-        else:
-            bdc_grids_data = load_jsons("grids")
-            selected_tile = ''
-            for g in bdc_grids_data['grids']:
-                if (g['name'] == grid):
-                    for tile in g['features']:
-                        if tile['properties']['tile'] == grid_id:
-                            selected_tile = tile
-            geom = selected_tile['properties']['geometry']
-            bbox = shapely.geometry.shape(geom).bounds
-            geom = shapely.geometry.shape(geom["features"][0]["geometry"]) if geom["type"] == "FeatureCollection" else shapely.geometry.shape(geom)
 
-    # geometry
-    else:
         bbox = geom.bounds
 
     start_date = datetime.datetime.strptime(str(start_year)+'-'+str(start_month)+'-'+str(start_day), "%Y-%m-%d")
@@ -691,16 +663,12 @@ def mosaic(name, data_dir, stac_url, collection, output_dir, start_year, start_m
 
         start_date = period['start']
         end_date = period['end']
-
-        print(dict(start_date=start_date, end_date=end_date))
-
+        
         if (mosaic_method=='lcf'):
 
             coll_data_dir = os.path.join(data_dir+'/'+collection_name)
 
             for i in range(len(bands)):
-
-                print(dict(band=bands[i]))
 
                 if (i==0):
                     bands_cloud = [bands[i]] + [cloud_dict[collection_name]['cloud_band']]
@@ -716,40 +684,48 @@ def mosaic(name, data_dir, stac_url, collection, output_dir, start_year, start_m
                 cloud = cloud_dict[collection]['cloud_band']
 
                 for path in scenes:
-                    for file in os.listdir(os.path.join(coll_data_dir, path, cloud)):
+                    filtered_files = [
+                        f for f in os.listdir(os.path.join(coll_data_dir, path, cloud))
+                        if (datetime.datetime.strptime(f.split("_")[2].split('T')[0], "%Y%m%d") >= datetime.datetime.strptime(start_date, "%Y-%m-%d") and datetime.datetime.strptime(f.split("_")[2].split('T')[0], "%Y%m%d") <= datetime.datetime.strptime(end_date, "%Y-%m-%d"))
+                    ]
+                    for file in filtered_files:
+                        date = datetime.datetime.strptime(file.split("_")[2].split('T')[0], "%Y%m%d")
                         pixel_count = count_pixels_with_value(os.path.join(coll_data_dir, path, cloud_dict[collection]['cloud_band'], file), cloud_dict[collection]['non_cloud_values'][0]) #por região não total
-                        date = file.split("_")[2].split('T')[0]
-                        if (datetime.datetime.strptime(date, "%Y%m%d") >= datetime.datetime.strptime(start_date, "%Y-%m-%d") and datetime.datetime.strptime(date, "%Y%m%d") <= datetime.datetime.strptime(end_date, "%Y-%m-%d")):
-                            cloud_list.append(dict(band=cloud, date=date, clean_percentage=float(pixel_count['count']/pixel_count['total']), scene=path, file=''))
-                            band_list.append(dict(band=bands[i], date=date, clean_percentage=float(pixel_count['count']/pixel_count['total']), scene=path, file=''))
-
+                        cloud_list.append(dict(band=cloud, date=date.strftime("%Y%m%d"), clean_percentage=float(pixel_count['count']/pixel_count['total']), scene=path, file=''))
+                        band_list.append(dict(band=bands[i], date=date.strftime("%Y%m%d"), clean_percentage=float(pixel_count['count']/pixel_count['total']), scene=path, file=''))
+     
                 print(f"Building {bands[i]} mosaic using {len(scenes)} scenes from the {collection_name}.")
-                
-                bands_links = []
-                cloud_links = []
+
+                files_list = []
+
                 for path in scenes:
                     for band in bands_cloud:
-                        for file in os.listdir(os.path.join(coll_data_dir, path, band)):
-                            date = file.split("_")[2].split('T')[0]
-                            if(band == cloud_dict[collection_name]['cloud_band']):
-                                for item in cloud_list:
-                                    if item['date'] == date:
-                                        item['file'] = os.path.join(coll_data_dir, path, band, file)
-                                        if (i==0):
-                                            cloud_links.append(dict(band=band, date=date, clean_percentage=item['clean_percentage'], scene=path, file=os.path.join(coll_data_dir, path, band, file)))
-                            else:
-                                for item in band_list:
-                                    if item['date'] == date:
-                                        bands_links.append(dict(band=band, date=date, clean_percentage=item['clean_percentage'], scene=path, file=os.path.join(coll_data_dir, path, band, file)))
+                        filtered_files = [
+                            f for f in os.listdir(os.path.join(coll_data_dir, path, band))
+                            if (datetime.datetime.strptime(f.split("_")[2].split('T')[0], "%Y%m%d") >= datetime.datetime.strptime(start_date, "%Y-%m-%d") and datetime.datetime.strptime(f.split("_")[2].split('T')[0], "%Y%m%d") <= datetime.datetime.strptime(end_date, "%Y-%m-%d"))
+                        ]
+                        for file in filtered_files:
+                            files_list.append(dict(file=os.path.join(coll_data_dir, path, band, file)))
+        
+                band_lookup, cloud_lookup = {}, {}
+                for f in files_list:
+                    path = f['file']
+                    parts = os.path.basename(path).split('_')
+                    date, scene = parts[2].split('T')[0], parts[5].lstrip('T')
+                    band_lookup[(parts[1], date, scene)] = path
+                    cloud_lookup[(date, scene)] = path
 
-                sorted_data = sorted(bands_links, key=lambda x: x['clean_percentage'], reverse=True)
+                for item in band_list:
+                    item['file'] = band_lookup.get((item['band'], item['date'], item['scene']), '')
 
-                if (i==0):
-                    cloud_sorted_data = sorted(cloud_links, key=lambda x: x['clean_percentage'], reverse=True)
+                for item in cloud_list:
+                    item['file'] = cloud_lookup.get((item['date'], item['scene']), '')
+
+                sorted_data = sorted(band_list, key=lambda x: x['clean_percentage'], reverse=True)
                 
-                lcf_list = merge_scene(sorted_data, cloud_sorted_data, scenes, collection_name, bands[i], data_dir)
+                cloud_sorted_data = sorted(cloud_list, key=lambda x: x['clean_percentage'], reverse=True)
 
-                print(dict(lcf_list=len(lcf_list)))
+                lcf_list = merge_scene(sorted_data, cloud_sorted_data, scenes, collection_name, bands[i], data_dir)
 
                 band = bands[i]
 
