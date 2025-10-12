@@ -463,11 +463,6 @@ def merge_tifs(tif_files, output_path, band, path_row=None, extent=None):
     for src in src_files_to_mosaic:
         src.close()
     
-    for f in reprojected_files:
-        try:
-            os.remove(f)
-        except:
-            pass
     return output_path
 
 def merge_scene(sorted_data, cloud_sorted_data, scenes, collection_name, band, data_dir):
@@ -560,8 +555,8 @@ def filter_scenes(collection, data_dir, bbox):
     
     for scene in list_dir:
         item = [item for item in grid_data["features"] if item["properties"]["name"] == scene]
-        if (geometry_collides_with_bbox(shapely.geometry.shape(item[0]["geometry"]), bbox)):
-            filtered_list.append(scene)
+        #if (geometry_collides_with_bbox(shapely.geometry.shape(item[0]["geometry"]), bbox)):
+        filtered_list.append(scene)
 
     return filtered_list
 
@@ -569,7 +564,7 @@ def clean_dir(data_dir):
     files_to_delete = [
         os.path.join(data_dir, f) 
         for f in os.listdir(data_dir) 
-        if f.startswith("merge_")
+        if f.startswith("merge_") or f.startswith("temp_")
     ]
     
     for f in files_to_delete:
