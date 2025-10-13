@@ -25,18 +25,12 @@ Simple python package for creating satellite image mosaics based on Brazil Data 
         :target: https://github.com/GSansigolo/smosaic/blob/master/LICENSE
         :alt: Software License
 
-
-.. image:: https://readthedocs.org/projects/smosaic/badge/?version=latest
-        :target: https://smosaic.readthedocs.io/en/latest/
-        :alt: Documentation Status
-
-
 .. image:: https://img.shields.io/badge/lifecycle-stable-green.svg
         :target: https://www.tidyverse.org/lifecycle/#stable
         :alt: Software Life Cycle
 
 
-.. image:: https://img.shields.io/github/tag/brazil-data-cube/smosaic.svg
+.. image:: https://img.shields.io/github/tag/GSansigolo/smosaic.svg
         :target: https://github.com/GSansigolo/smosaic/releases
         :alt: Release
 
