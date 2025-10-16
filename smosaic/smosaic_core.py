@@ -607,35 +607,48 @@ def mosaic(name, data_dir, stac_url, collection, output_dir, start_year, start_m
     if collection not in ['S2_L2A-1']: #'S2-16D-2'
         return print(f"{collection['collection']} collection not yet supported.")
     
+    #geometry
+    if (geom):
+        bbox = geom.bounds
+    
     #bbox
-    if (bbox != None):
+    else:
         tuple_bbox = tuple(map(float, bbox.split(',')))
         geom = shapely.geometry.box(*tuple_bbox)
         bbox = geom.bounds
 
     start_date = datetime.datetime.strptime(str(start_year)+'-'+str(start_month)+'-'+str(start_day), "%Y-%m-%d")
 
-    if (end_year != None and end_month != None and end_day != None ):
+    end_date = None
+    if all(v is not None for v in [end_year, end_month, end_day]):
         end_date = datetime.datetime.strptime(str(end_year)+'-'+str(end_month)+'-'+str(end_day), "%Y-%m-%d")
-    elif (duration_months):
-        end_date = str(add_months_to_date(start_date, duration_months-1))
-    else:
-        return print(f"Not provided with a valid time interval.")
+    elif duration_months is not None:
+        end_date = add_months_to_date(start_date,duration_months-1)
+    elif duration_days is not None and not any([end_year, end_month, end_day, duration_months]):
+        end_date = add_days_to_date(start_date,duration_days)
+    
+    if end_date is None:
+        return print("Not provided with a valid time interval.")
 
     periods = []
-    current_period_start = start_date
+    current_start_date = start_date
 
-    while current_period_start <= end_date:
-        current_period_end = add_days_to_date(current_period_start, duration_days - 1)
-        if current_period_end > end_date:
-            current_period_end = end_date
-        if current_period_start.strftime("%Y-%m-%d") != current_period_end.strftime("%Y-%m-%d"):
+    if duration_days:
+        while current_start_date <= end_date:
+            current_end_date = add_days_to_date(current_start_date,duration_days-1)
+            if current_end_date > end_date:
+                current_end_date = end_date
             periods.append({
-                'start': current_period_start.strftime("%Y-%m-%d"),
-                'end': current_period_end.strftime("%Y-%m-%d")
+                'start': current_start_date.strftime("%Y-%m-%d"),
+                'end': current_end_date.strftime("%Y-%m-%d")
             })
-        current_period_start = add_days_to_date(current_period_start, duration_days)
-
+            current_start_date += datetime.timedelta(days=duration_days)
+    else:
+        periods.append({
+            'start': start_date.strftime("%Y-%m-%d"),
+            'end': end_date.strftime("%Y-%m-%d")
+        })
+        
     dict_collection=collection_query(
         collection=collection,
         start_date=start_date.strftime("%Y-%m-%d"),

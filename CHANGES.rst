@@ -19,6 +19,12 @@
 Changes
 =======
 
+0.2.2 (2025-10-15)
+------------------
+
+* **Fix**: Fixed a bug in the ``mosaic`` function, now it generates both single-date mosaics and data cubes correctly.
+
+
 0.2.0 (2025-10-10)
 ------------------
 
