@@ -19,6 +19,15 @@
 Changes
 =======
 
+0.3.0 (2025-10-31)
+------------------
+
+* **Architectural Refactor**: Split single file `smosaic_core.py` into modular package structure with specialized modules.
+* **Breaking Changes**: 
+  - All functions now distributed across dedicated modules (smosaic_clip_raster, smosaic_merge_scene, etc.)
+  - Update imports to reference new modules (e.g., `from smosaic_clip_raster import clip_raster`)
+
+
 0.2.5 (2025-10-18)
 ------------------
 
