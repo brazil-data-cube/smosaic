@@ -16,7 +16,7 @@
     along with this program. If not, see <https://www.gnu.org/licenses/gpl-3.0.html>.
 
 .. image:: docs/img/smosaic_logo.png
-   :width: 200
+   :width: 350
    :align: center
    :alt: smosaic logo
 
