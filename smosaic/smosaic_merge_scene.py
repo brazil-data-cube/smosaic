@@ -69,13 +69,14 @@ def merge_scene(sorted_data, cloud_sorted_data, scenes, collection_name, band, d
             
             with rasterio.open(os.path.join(data_dir, provenance_file_name), 'w', **profile) as dst:
                 dst.write(provenance)
+            if i==0:
+                first_provenance = os.path.join(data_dir, provenance_file_name)
 
         temp_images.append(images[0])
-        provenance_images.append(provenance_images[0])
 
         output_file = os.path.join(data_dir, "merge_"+collection_name.split('-')[0]+"_"+scene+"_"+band+".tif")  
 
-        provenance_output_file = os.path.join(data_dir, "provenance_merge_"+collection_name.split('-')[0]+"_"+scene+"_"+band+".tif")  
+        provenance_output_file = os.path.join(data_dir, "provenance_merge_"+collection_name.split('-')[0]+"_"+scene+".tif") 
 
         datasets = [rasterio.open(file) for file in temp_images]  
         
