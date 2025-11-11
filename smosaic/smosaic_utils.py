@@ -117,6 +117,14 @@ def load_jsons(cut_grid):
         return json.loads(states_json_path.read_text(encoding="utf-8"))
 
 
+def days_from_new_year(dt):
+    """Calculate days from given datetime to Jan 1 of same year"""
+    year = dt.year
+    jan_1 = datetime.datetime(year, 1, 1)
+    days_diff = (dt - jan_1).days
+    return year, days_diff
+
+
 def add_months_to_date(start_date, months_to_add):
     """
     Add months to a date and return the last day of the FINAL month.
