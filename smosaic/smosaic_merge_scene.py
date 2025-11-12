@@ -23,7 +23,7 @@ def merge_scene(sorted_data, cloud_sorted_data, scenes, collection_name, band, d
         
         temp_images = []
 
-        for i in tqdm(range(0, len(images)), desc="Processing..."):
+        for i in tqdm.tqdm(range(0, len(images)), desc="Processing..."):
 
             try:
                 with rasterio.open(images[i]) as src:
@@ -116,7 +116,7 @@ def merge_scene_provenance_cloud(sorted_data, cloud_sorted_data, scenes, collect
         provenance_temp_images = []
         temp_cloud_images = []
 
-        for i in tqdm(range(0, len(images)), desc="Processing..."):
+        for i in tqdm.tqdm(range(0, len(images)), desc="Processing..."):
 
             try:
                 with rasterio.open(images[i]) as src:
