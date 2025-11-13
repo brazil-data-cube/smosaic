@@ -9,7 +9,7 @@ from rasterio.warp import Resampling
 
 from smosaic.smosaic_get_dataset_extents import get_dataset_extents
 from smosaic.smosaic_merge_tifs import merge_tifs
-from smosaic.smosaic_utils import days_from_new_year, get_all_cloud_configs
+from smosaic.smosaic_utils import get_all_cloud_configs
 
 
 def merge_scene(sorted_data, cloud_sorted_data, scenes, collection_name, band, data_dir):
@@ -23,7 +23,7 @@ def merge_scene(sorted_data, cloud_sorted_data, scenes, collection_name, band, d
         
         temp_images = []
 
-        for i in tqdm.tqdm(range(0, len(images)), desc="Processing..."):
+        for i in tqdm.tqdm(range(0, len(images)), desc=f"Processing {band} {scene}..."):
 
             try:
                 with rasterio.open(images[i]) as src:
@@ -43,6 +43,9 @@ def merge_scene(sorted_data, cloud_sorted_data, scenes, collection_name, band, d
                     )
             except rasterio.errors.RasterioIOError as e:
                 continue
+            
+            if (int(images[i].split('_')[4].replace("N","")) > 400):
+                image_data = image_data - 1000
             
             cloud_dict = get_all_cloud_configs()
             clear_mask = np.isin(cloud_mask, cloud_dict[collection_name]['non_cloud_values'])
@@ -116,7 +119,7 @@ def merge_scene_provenance_cloud(sorted_data, cloud_sorted_data, scenes, collect
         provenance_temp_images = []
         temp_cloud_images = []
 
-        for i in tqdm.tqdm(range(0, len(images)), desc="Processing..."):
+        for i in tqdm.tqdm(range(0, len(images)), desc=f"Processing {band} {scene}..."):
 
             try:
                 with rasterio.open(images[i]) as src:
@@ -137,6 +140,9 @@ def merge_scene_provenance_cloud(sorted_data, cloud_sorted_data, scenes, collect
             except rasterio.errors.RasterioIOError as e:
                 continue
             
+            if (int(images[i].split('_')[4].replace("N","")) > 400):
+                image_data = image_data - 1000
+
             cloud_dict = get_all_cloud_configs()
             clear_mask = np.isin(cloud_mask, cloud_dict[collection_name]['non_cloud_values'])
 
@@ -150,12 +156,18 @@ def merge_scene_provenance_cloud(sorted_data, cloud_sorted_data, scenes, collect
             masked_cloud_image[clear_mask] = cloud_mask[clear_mask] 
 
             datatime_image = datetime.datetime.strptime(images[i].split('/')[-1].split("_")[2].split('T')[0], "%Y%m%d")
-            year, days = days_from_new_year(datatime_image)
+            day_of_year = datatime_image.timetuple().tm_yday
 
             provenance = np.full_like(masked_image, profile['nodata'])
-            
+                            
+            if i==0:
+                first_provenance = np.full_like(image_data, image_data)
+                first_provenance_file_name = 'provenance_first_' + images[i].split('/')[-1]
+                with rasterio.open(os.path.join(data_dir, first_provenance_file_name), 'w', **profile) as dst:
+                    dst.write(first_provenance)
+
             valid_mask = masked_image != profile['nodata']
-            provenance[valid_mask] = days
+            provenance[valid_mask] = day_of_year
     
             for band_idx in range(image_data.shape[0]):
                 masked_image[band_idx, clear_mask] = image_data[band_idx, clear_mask]
@@ -177,17 +189,13 @@ def merge_scene_provenance_cloud(sorted_data, cloud_sorted_data, scenes, collect
 
             with rasterio.open(os.path.join(data_dir, cloud_file_name), 'w', **profile) as dst:
                 dst.write(masked_cloud_image, 1) 
-                
-            if i==0:
-                first_provenance = os.path.join(data_dir, provenance_file_name)
-                first_cloud = os.path.join(data_dir, cloud_file_name)
 
         if not temp_images:
             continue
 
         temp_images.append(images[0])
-        provenance_temp_images.append(first_provenance)
-        temp_cloud_images.append(first_cloud)
+        provenance_temp_images.append(os.path.join(data_dir, first_provenance_file_name))
+        temp_cloud_images.append(cloud_images[0])
 
         output_file = os.path.join(data_dir, "merge_"+collection_name.split('-')[0]+"_"+scene+"_"+band+".tif")  
         provenance_output_file = os.path.join(data_dir, "provenance_merge_"+collection_name.split('-')[0]+"_"+scene+".tif") 

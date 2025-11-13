@@ -54,12 +54,14 @@ def mosaic(name, data_dir, stac_url, collection, output_dir, start_year, start_m
     if duration_days:
         while current_start_date <= end_date:
             current_end_date = add_days_to_date(current_start_date,duration_days-1)
+
             if current_end_date > end_date:
                 current_end_date = end_date
-            periods.append({
-                'start': current_start_date.strftime("%Y-%m-%d"),
-                'end': current_end_date.strftime("%Y-%m-%d")
-            })
+            if current_start_date != current_end_date:
+                periods.append({
+                    'start': current_start_date.strftime("%Y-%m-%d"),
+                    'end': current_end_date.strftime("%Y-%m-%d")
+                })
             current_start_date += datetime.timedelta(days=duration_days)
     elif duration_months:
         while current_start_date <= end_date:
@@ -67,10 +69,11 @@ def mosaic(name, data_dir, stac_url, collection, output_dir, start_year, start_m
 
             if current_end_date > end_date:
                 current_end_date = end_date
-            periods.append({
-                'start': current_start_date.strftime("%Y-%m-%d"),
-                'end': current_end_date.strftime("%Y-%m-%d")
-            })
+            if current_start_date != current_end_date:
+                periods.append({
+                    'start': current_start_date.strftime("%Y-%m-%d"),
+                    'end': current_end_date.strftime("%Y-%m-%d")
+                })
             current_start_date = current_start_date + dateutil.relativedelta.relativedelta(months=duration_months)
     else:
         periods.append({
@@ -114,7 +117,7 @@ def process_period(period, mosaic_method, data_dir, collection_name, bands, bbox
     
     coll_data_dir = os.path.join(data_dir+'/'+collection_name)
 
-    for i in range(len(bands)):
+    for i in range(0, len(bands)):
 
         if (i==0):
             cloud_dict = get_all_cloud_configs()
@@ -214,9 +217,9 @@ def process_period(period, mosaic_method, data_dir, collection_name, bands, bbox
             os.makedirs(output_dir)
         
         if (duration_months):
-            file_name = "mosaic-"+collection_name.split("-")[0].lower()+"-"+name.lower()+"-"+str(duration_months)+"m"+"-"+bands[i].lower()+"-"+str(start_date).replace("-", "")+'_'+str(end_date).replace("-", "")
+            file_name = "mosaic-"+collection_name.split("-")[0].lower()+"-"+name.lower()+"-"+str(duration_months)+"m"+"-"+bands[i]+"-"+str(start_date).replace("-", "")+'_'+str(end_date).replace("-", "")
         elif (duration_days):
-            file_name = "mosaic-"+collection_name.split("-")[0].lower()+"-"+name.lower()+"-"+str(duration_days)+"d"+"-"+bands[i].lower()+"-"+str(start_date).replace("-", "")+'_'+str(end_date).replace("-", "")
+            file_name = "mosaic-"+collection_name.split("-")[0].lower()+"-"+name.lower()+"-"+str(duration_days)+"d"+"-"+bands[i]+"-"+str(start_date).replace("-", "")+'_'+str(end_date).replace("-", "")
 
         output_file = os.path.join(output_dir, "raw-"+file_name+".tif")
 
@@ -235,10 +238,10 @@ def process_period(period, mosaic_method, data_dir, collection_name, bands, bbox
 
         clip_raster(input_raster_path=output_file, output_folder=output_dir, clip_geometry=geom, output_filename=file_name+".tif")
         if (i==0):
-            clip_raster(input_raster_path=provenance_output_file, output_folder=output_dir, clip_geometry=geom, output_filename=file_name.replace("-"+bands[i].lower()+"-", "-provenance-")+".tif")
-            clip_raster(input_raster_path=cloud_data_output_file, output_folder=output_dir, clip_geometry=geom, output_filename=file_name.replace("-"+bands[i].lower()+"-", "-"+cloud_dict[collection_name]['cloud_band']+"-")+".tif")
+            clip_raster(input_raster_path=provenance_output_file, output_folder=output_dir, clip_geometry=geom, output_filename=file_name.replace("-"+bands[i]+"-", "-PROVENANCE-")+".tif")
+            clip_raster(input_raster_path=cloud_data_output_file, output_folder=output_dir, clip_geometry=geom, output_filename=file_name.replace("-"+bands[i]+"-", "-"+cloud_dict[collection_name]['cloud_band']+"-")+".tif")
         
         generate_cog(input_folder=output_dir, input_filename=file_name, compress='LZW')
         if (i==0):
-            generate_cog(input_folder=output_dir, input_filename=file_name.replace("-"+bands[i].lower()+"-", "-provenance-"), compress='LZW')
-            generate_cog(input_folder=output_dir, input_filename=file_name.replace("-"+bands[i].lower()+"-", "-"+cloud_dict[collection_name]['cloud_band']+"-"), compress='LZW')
+            generate_cog(input_folder=output_dir, input_filename=file_name.replace("-"+bands[i]+"-", "-PROVENANCE-"), compress='LZW')
+            generate_cog(input_folder=output_dir, input_filename=file_name.replace("-"+bands[i]+"-", "-"+cloud_dict[collection_name]['cloud_band']+"-"), compress='LZW')
