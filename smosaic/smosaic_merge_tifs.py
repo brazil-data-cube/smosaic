@@ -116,11 +116,6 @@ def merge_tifs(tif_files, output_path, band, path_row=None, extent=None):
     with rasterio.open(output_path, "w", **out_meta) as dest:
         dest.write(mosaic)
 
-    #if(path_row):
-        #print(f"Successfully merged {len(src_files_to_mosaic)} files for {path_row} scene.")
-    #else:
-        #print(f"Successfully merged {len(src_files_to_mosaic)} files.")
-    
     for src in src_files_to_mosaic:
         src.close()
     

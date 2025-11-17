@@ -22,6 +22,18 @@ Changes
 0.5.0 (2025-11-17)
 ------------------
 
+* **Notebook to Script Migration**: Replaced Jupyter notebooks with Python script examples:
+  - ``smosaic-closest-to-date.py``: Example of creating mosaics using closest-to-date selection
+  - ``smosaic-data-cube.py``: Example of generating temporal data cubes
+  - ``smosaic-mosaic.py``: General mosaic generation example
+* **New Provenance Band**: Added automatic generation of provenance band indicating the origin date of each selected best pixel in the composition
+* **Cloud Band Support**: Added automatic cloud band generation alongside user-requested bands
+* **File Integrity Verification**: Added automatic TIFF file corruption check in ``download_stream()`` function
+* **Sentinel-2 Baseline Correction**: Added new function to correct images based on Sentinel-2 processing baseline number
+* **Mosaic Algorithm Refactor**: Completely redesigned ``merge_scene()`` function with improved best-pixel mosaic generation
+* **Conda Environment Guide**: Added ``conda-environment.md`` documentation for creating Conda environments to install and run the library
+* **Enhanced Output Bands**: All mosaic outputs now include provenance and cloud bands by default alongside requested spectral bands
+* **Progress Tracking**: Enhanced library logging output with detailed progress tracking, displaying percentage completion per scene and band during mosaic generation
 
 
 0.4.0 (2025-11-10)
