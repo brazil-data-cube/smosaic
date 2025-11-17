@@ -22,7 +22,7 @@ def collection_get_data(stac, datacube, data_dir):
             datetime=start_date+"T00:00:00Z/"+end_date+"T23:59:00Z",
             bbox=bbox
         )
-        
+
     tiles = []
     for item in item_search.items():
         if (collection=="S2_L2A-1"):
@@ -34,8 +34,7 @@ def collection_get_data(stac, datacube, data_dir):
             if tile not in tiles:
                 tiles.append(tile)
                 
-    for tile in tiles:
-        #print(data_dir+"/"+collection+"/"+tile)      
+    for tile in tiles:      
         if not os.path.exists(data_dir+"/"+collection+"/"+tile):
             os.makedirs(data_dir+"/"+collection+"/"+tile)
         for band in bands:

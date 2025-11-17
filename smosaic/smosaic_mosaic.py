@@ -1,4 +1,5 @@
 import os
+import json
 import shapely
 import rasterio
 import datetime
@@ -11,6 +12,7 @@ from smosaic.smosaic_collection_get_data import collection_get_data
 from smosaic.smosaic_collection_query import collection_query
 from smosaic.smosaic_count_pixels import count_pixels
 from smosaic.smosaic_filter_scenes import filter_scenes
+from smosaic.smosaic_fix_baseline_number import fix_baseline_number
 from smosaic.smosaic_generate_cog import generate_cog
 from smosaic.smosaic_get_dataset_extents import get_dataset_extents
 from smosaic.smosaic_merge_scene import merge_scene, merge_scene_provenance_cloud
@@ -43,7 +45,7 @@ def mosaic(name, data_dir, stac_url, collection, output_dir, start_year, start_m
     elif duration_months is not None:
         end_date = add_months_to_date(start_date,duration_months-1)
     elif duration_days is not None and not any([end_year, end_month, end_day, duration_months]):
-        end_date = add_days_to_date(start_date,duration_days)
+        end_date = add_days_to_date(start_date,duration_days-1)
     
     if end_date is None:
         return print("Not provided with a valid time interval.")
@@ -107,7 +109,7 @@ def mosaic(name, data_dir, stac_url, collection, output_dir, start_year, start_m
 
 
 def process_period(period, mosaic_method, data_dir, collection_name, bands, bbox, output_dir, duration_days, duration_months, name, geom, reference_date):
-    
+
     start_date = period['start']
     end_date = period['end']
 
@@ -119,15 +121,13 @@ def process_period(period, mosaic_method, data_dir, collection_name, bands, bbox
 
     for i in range(0, len(bands)):
 
-        if (i==0):
-            cloud_dict = get_all_cloud_configs()
-            bands_cloud = [bands[i]] + [cloud_dict[collection_name]['cloud_band']]
-            cloud_list = []   
-        else:
-            bands_cloud = [bands[i]] 
-        
+        cloud_dict = get_all_cloud_configs()
+
+        cloud_list = []   
         band_list = []             
         sorted_data = []
+
+        bands_cloud = [bands[i]] + [cloud_dict[collection_name]['cloud_band']]
 
         scenes = filter_scenes(collection_name, data_dir, bbox)
 
@@ -145,13 +145,10 @@ def process_period(period, mosaic_method, data_dir, collection_name, bands, bbox
                     pixel_count = count_pixels(os.path.join(coll_data_dir, path, cloud_dict[collection_name]['cloud_band'], file), cloud_dict[collection_name]['non_cloud_values'][0]) #por região não total
                     cloud_list.append(dict(band=cloud, date=date.strftime("%Y%m%d"), distance_days=distance_days, clean_percentage=float(pixel_count['count']/pixel_count['total']), scene=path, file=''))
                     band_list.append(dict(band=bands[i], date=date.strftime("%Y%m%d"), distance_days=distance_days, clean_percentage=float(pixel_count['count']/pixel_count['total']), scene=path, file=''))
-
                 else:
                     pixel_count = count_pixels(os.path.join(coll_data_dir, path, cloud_dict[collection_name]['cloud_band'], file), cloud_dict[collection_name]['non_cloud_values'][0]) #por região não total
                     cloud_list.append(dict(band=cloud, date=date.strftime("%Y%m%d"), clean_percentage=float(pixel_count['count']/pixel_count['total']), scene=path, file=''))
                     band_list.append(dict(band=bands[i], date=date.strftime("%Y%m%d"), clean_percentage=float(pixel_count['count']/pixel_count['total']), scene=path, file=''))
-
-        #print(f"Building {bands[i]} mosaic using {len(scenes)} scenes from the {collection_name}.")
 
         files_list = []
 
@@ -181,35 +178,28 @@ def process_period(period, mosaic_method, data_dir, collection_name, bands, bbox
         if (mosaic_method=='lcf'):
 
             sorted_data = sorted(band_list, key=lambda x: x['clean_percentage'], reverse=True)
-            
+
             cloud_sorted_data = sorted(cloud_list, key=lambda x: x['clean_percentage'], reverse=True)
-
-            if (i==0):
-                ordered_lists = merge_scene_provenance_cloud(sorted_data, cloud_sorted_data, scenes, collection_name, bands[i], data_dir)
-            else:
-                ordered_lists = merge_scene(sorted_data, cloud_sorted_data, scenes, collection_name, bands[i], data_dir)
-
+            
         if (mosaic_method=='crono'):
 
             sorted_data = sorted(band_list, key=lambda x: x['date'])
 
             cloud_sorted_data = sorted(cloud_list, key=lambda x: x['date'])
 
-            if (i==0):
-                ordered_lists = merge_scene_provenance_cloud(sorted_data, cloud_sorted_data, scenes, collection_name, bands[i], data_dir)
-            else:
-                ordered_lists = merge_scene(sorted_data, cloud_sorted_data, scenes, collection_name, bands[i], data_dir)
-
         if (mosaic_method=='ctd'):
 
             sorted_data = sorted(band_list, key=lambda x: x['distance_days'])
-            
+
             cloud_sorted_data = sorted(cloud_list, key=lambda x: x['distance_days'])
 
-            if (i==0):
-                ordered_lists = merge_scene_provenance_cloud(sorted_data, cloud_sorted_data, scenes, collection_name, bands[i], data_dir)
-            else:
-                ordered_lists = merge_scene(sorted_data, cloud_sorted_data, scenes, collection_name, bands[i], data_dir)
+        if (i==0):
+            ordered_lists = merge_scene_provenance_cloud(sorted_data, cloud_sorted_data, scenes, collection_name, bands[i], data_dir)
+        else:
+            ordered_lists = merge_scene(sorted_data, cloud_sorted_data, scenes, collection_name, bands[i], data_dir)
+
+        filename = sorted_data[0]['file'].split('/')[-1]
+        baseline_number = filename.split("_N")[1][0:4]
         
         band = bands[i]
 
@@ -230,7 +220,8 @@ def process_period(period, mosaic_method, data_dir, collection_name, bands, bbox
         datasets = [rasterio.open(file) for file in  ordered_lists['merge_files']]        
         
         extents = get_dataset_extents(datasets)
-        
+
+
         merge_tifs(tif_files= ordered_lists['merge_files'], output_path=output_file, band=band, path_row=name, extent=extents)
         if (i==0):
             merge_tifs(tif_files=ordered_lists['provenance_merge_files'], output_path=provenance_output_file, band=band, path_row=name, extent=extents)
@@ -241,6 +232,8 @@ def process_period(period, mosaic_method, data_dir, collection_name, bands, bbox
             clip_raster(input_raster_path=provenance_output_file, output_folder=output_dir, clip_geometry=geom, output_filename=file_name.replace("-"+bands[i]+"-", "-PROVENANCE-")+".tif")
             clip_raster(input_raster_path=cloud_data_output_file, output_folder=output_dir, clip_geometry=geom, output_filename=file_name.replace("-"+bands[i]+"-", "-"+cloud_dict[collection_name]['cloud_band']+"-")+".tif")
         
+        fix_baseline_number(input_folder=output_dir, input_filename=file_name, baseline_number=baseline_number)
+
         generate_cog(input_folder=output_dir, input_filename=file_name, compress='LZW')
         if (i==0):
             generate_cog(input_folder=output_dir, input_filename=file_name.replace("-"+bands[i]+"-", "-PROVENANCE-"), compress='LZW')

@@ -194,8 +194,8 @@ def geometry_collides_with_bbox(geometry,input_bbox):
 def clean_dir(data_dir):
     files_to_delete = [
         os.path.join(data_dir, f) 
-        for f in os.listdir(data_dir)  #f.startswith("merge_") or
-        if  f.startswith("temp_") or f.startswith("provenance_") or f.startswith("clear_") or f.startswith("cloud_")
+        for f in os.listdir(data_dir)  
+        if  f.startswith("merge_") or f.startswith("temp_") or f.startswith("provenance_") or f.startswith("clear_") or f.startswith("cloud_")
     ]
     
     for f in files_to_delete:
