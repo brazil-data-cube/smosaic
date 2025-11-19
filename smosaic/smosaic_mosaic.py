@@ -18,10 +18,13 @@ from smosaic.smosaic_get_dataset_extents import get_dataset_extents
 from smosaic.smosaic_merge_scene import merge_scene, merge_scene_provenance_cloud
 from smosaic.smosaic_merge_tifs import merge_tifs
 from smosaic.smosaic_reproject_tif import reproject_tif
+from smosaic.smosaic_spectral_indices import calculate_spectral_indices
 from smosaic.smosaic_utils import add_days_to_date, add_months_to_date, clean_dir, days_between_dates, get_all_cloud_configs
 
 
 def mosaic(name, data_dir, stac_url, collection, output_dir, start_year, start_month, start_day, mosaic_method, bands=None, reference_date=None, duration_days=None, end_year=None, end_month=None, end_day=None, duration_months=None, geom=None, grid=None, grid_id=None, bbox=None, profile=None):
+    
+    clean_dir(data_dir,key="all")
 
     stac = pystac_client.Client.open(stac_url)
 
@@ -86,8 +89,10 @@ def mosaic(name, data_dir, stac_url, collection, output_dir, start_year, start_m
         
     if profile=="crop_condition":
         bands = ["B02","B04","B08"]
+        spectral_indices = ["NDVI","EVI", "EVI2","SAVI"]
     elif profile=="urban_analysis":
         bands = ["B02","B03","B04","B08","B11"]
+        spectral_indices = ["NDBI","MNDWI"]
 
     dict_collection=collection_query(
         collection=collection,
@@ -111,7 +116,9 @@ def mosaic(name, data_dir, stac_url, collection, output_dir, start_year, start_m
     with multiprocessing.Pool(processes=num_processes) as pool:
         results = pool.starmap(process_period, args_for_processes)
 
-    clean_dir(data_dir)
+    calculate_spectral_indices(input_folder=output_dir,spectral_indices=spectral_indices)
+
+    clean_dir(data_dir,key="all")
 
 
 def process_period(period, mosaic_method, data_dir, collection_name, bands, bbox, output_dir, duration_days, duration_months, name, geom, reference_date):

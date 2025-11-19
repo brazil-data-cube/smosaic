@@ -9,7 +9,7 @@ from rasterio.warp import Resampling
 
 from smosaic.smosaic_get_dataset_extents import get_dataset_extents
 from smosaic.smosaic_merge_tifs import merge_tifs
-from smosaic.smosaic_utils import get_all_cloud_configs
+from smosaic.smosaic_utils import clean_dir, get_all_cloud_configs
 
 
 def merge_scene(sorted_data, cloud_sorted_data, scenes, collection_name, band, data_dir):
@@ -75,6 +75,12 @@ def merge_scene(sorted_data, cloud_sorted_data, scenes, collection_name, band, d
 
         for dataset in datasets:
             dataset.close()
+        date_list = [
+            filename.split("T")[0][-8:] 
+            for filename in temp_images 
+        ]
+
+        clean_dir(data_dir=data_dir,scene=scene,date_list=date_list)
 
     return dict(merge_files=merge_files)
 
@@ -183,5 +189,12 @@ def merge_scene_provenance_cloud(sorted_data, cloud_sorted_data, scenes, collect
 
         for dataset in datasets:
             dataset.close()
+
+        date_list = [
+            filename.split("T")[0][-8:] 
+            for filename in temp_images 
+        ]
+
+        clean_dir(data_dir=data_dir,scene=scene,date_list=date_list)
 
     return dict(merge_files=merge_files, provenance_merge_files=provenance_merge_files, cloud_merge_files=cloud_merge_files)
