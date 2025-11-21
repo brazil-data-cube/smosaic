@@ -89,10 +89,10 @@ def mosaic(name, data_dir, stac_url, collection, output_dir, start_year, start_m
         
     if profile=="crop_condition":
         bands = ["B02","B04","B08"]
-        spectral_indices = ["NDVI","EVI", "EVI2","SAVI"]
+        spectral_indices = ["NDVI","EVI","EVI2"]
     elif profile=="urban_analysis":
         bands = ["B02","B03","B04","B08","B11"]
-        spectral_indices = ["NDBI","MNDWI"]
+        spectral_indices = ["NDBI","NDVI"]
 
     dict_collection=collection_query(
         collection=collection,
@@ -119,6 +119,7 @@ def mosaic(name, data_dir, stac_url, collection, output_dir, start_year, start_m
     calculate_spectral_indices(input_folder=output_dir,spectral_indices=spectral_indices)
 
     clean_dir(data_dir,key="all")
+    clean_dir(output_dir,key="all")
 
 
 def process_period(period, mosaic_method, data_dir, collection_name, bands, bbox, output_dir, duration_days, duration_months, name, geom, reference_date):
@@ -207,9 +208,9 @@ def process_period(period, mosaic_method, data_dir, collection_name, bands, bbox
             cloud_sorted_data = sorted(cloud_list, key=lambda x: x['distance_days'])
 
         if (i==0):
-            ordered_lists = merge_scene_provenance_cloud(sorted_data, cloud_sorted_data, scenes, collection_name, bands[i], data_dir)
+            ordered_lists = merge_scene_provenance_cloud(sorted_data, cloud_sorted_data, scenes, collection_name, bands[i], data_dir, start_date, end_date)
         else:
-            ordered_lists = merge_scene(sorted_data, cloud_sorted_data, scenes, collection_name, bands[i], data_dir)
+            ordered_lists = merge_scene(sorted_data, cloud_sorted_data, scenes, collection_name, bands[i], data_dir, start_date, end_date)
 
         filename = sorted_data[0]['file'].split('/')[-1]
         baseline_number = filename.split("_N")[1][0:4]
@@ -255,3 +256,5 @@ def process_period(period, mosaic_method, data_dir, collection_name, bands, bbox
         if (i==0):
             reproject_tif(input_folder=output_dir, input_filename=file_name.replace("-"+bands[i]+"-", "-PROVENANCE-"))
             reproject_tif(input_folder=output_dir, input_filename=file_name.replace("-"+bands[i]+"-", "-"+cloud_dict[collection_name]['cloud_band']+"-"))
+        
+        clean_dir(data_dir=data_dir,date_interval=str("-"+str(start_date).replace("-", "")+'_'+str(end_date).replace("-", "")))
