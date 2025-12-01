@@ -25,7 +25,7 @@ from smosaic.smosaic_utils import add_days_to_date, add_months_to_date, clean_di
 
 def mosaic(name, data_dir, stac_url, collection, output_dir, start_year, start_month, start_day, mosaic_method, bands=None, reference_date=None, duration_days=None, end_year=None, end_month=None, end_day=None, duration_months=None, geom=None, grid=None, grid_id=None, bbox=None, profile=None):
     
-    clean_dir(data_dir,key="all")
+    clean_dir(data_dir)
 
     stac = pystac_client.Client.open(stac_url)
 
