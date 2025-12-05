@@ -105,7 +105,7 @@ def mosaic(name, data_dir, stac_url, collection, output_dir, start_year, start_m
     
     collection_name = dict_collection['collection']
 
-    #collection_get_data(stac, dict_collection, data_dir=data_dir)
+    collection_get_data(stac, dict_collection, data_dir=data_dir)
         
     num_processes = multiprocessing.cpu_count()
 
@@ -120,7 +120,7 @@ def mosaic(name, data_dir, stac_url, collection, output_dir, start_year, start_m
     with multiprocessing.Pool(processes=num_processes) as pool:
         results = pool.starmap(process_period, args_for_processes)
 
-    calculate_spectral_indices(input_folder=output_dir,spectral_indices=spectral_indices)
+    #calculate_spectral_indices(input_folder=output_dir,spectral_indices=spectral_indices)
 
     clean_dir(data_dir)
     clean_dir(output_dir)
