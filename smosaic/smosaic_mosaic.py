@@ -29,7 +29,7 @@ def mosaic(name, data_dir, stac_url, collection, output_dir, start_year, start_m
 
     stac = pystac_client.Client.open(stac_url)
 
-    if collection not in ['S2_L2A-1']: #'S2-16D-2'
+    if collection not in ['S2_L2A-1','S2_L1C_BUNDLE-1']: #'S2-16D-2'
         return print(f"{collection['collection']} collection not yet supported.")
     
     #geometry
@@ -90,7 +90,7 @@ def mosaic(name, data_dir, stac_url, collection, output_dir, start_year, start_m
         
     if profile=="crop_condition":
         bands = ["B02","B04","B08"]
-        spectral_indices = ["NDVI","EVI","EVI2"]
+        spectral_indices = ["NDVI","EVI","EVI2", "SAVI"]
     elif profile=="urban_analysis":
         bands = ["B02","B03","B04","B08","B11"]
         spectral_indices = ["NDBI","NDVI"]
@@ -106,7 +106,7 @@ def mosaic(name, data_dir, stac_url, collection, output_dir, start_year, start_m
     collection_name = dict_collection['collection']
 
     collection_get_data(stac, dict_collection, data_dir=data_dir)
-        
+
     num_processes = multiprocessing.cpu_count()
 
     args_for_processes = [
@@ -120,7 +120,7 @@ def mosaic(name, data_dir, stac_url, collection, output_dir, start_year, start_m
     with multiprocessing.Pool(processes=num_processes) as pool:
         results = pool.starmap(process_period, args_for_processes)
 
-    #calculate_spectral_indices(input_folder=output_dir,spectral_indices=spectral_indices)
+    calculate_spectral_indices(input_folder=output_dir,spectral_indices=spectral_indices)
 
     clean_dir(data_dir)
     clean_dir(output_dir)

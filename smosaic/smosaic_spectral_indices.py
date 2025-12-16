@@ -1,230 +1,276 @@
 import os
 import re
+import rasterio
 import subprocess
+import numpy as np
+from rasterio.enums import Resampling
+from rasterio.windows import Window
 
-def fix_sentinel_negatives(input_file):
-    output = input_file.replace('.tif', '_FIXED.tif')
-    os.system(f'gdal_calc.py -A "{input_file}" --outfile="{output}" --calc="numpy.where(A < 0, 0, A)" --type=UInt16 --NoDataValue=0 --co COMPRESS=LZW --co PREDICTOR=2 --co TILED=YES')
-
+def fix_negatives(input_file):
+    temp_file = input_file.replace('.tif', '_temp.tif')
+    
+    with rasterio.open(input_file) as src:
+        data = src.read()
+        meta = src.meta.copy()
+        meta.update({'dtype': 'int16', 'nodata': 0})
+        
+        mask = data < 0
+        data[mask] = 0
+        
+        meta.update({
+            'dtype': 'int16',
+            'nodata': 0
+        })
+        
+        with rasterio.open(temp_file, 'w', **meta) as dst:
+            dst.write(data)
+    
+    os.remove(input_file)
+    os.rename(temp_file, input_file)
+    
 def ndvi_calc(nir, red, compress='LZW'):
-    output_ndvi_file = nir.replace("-B08_", "-NDVI-")
-    os.system(f'gdal_calc.py -A {nir} -B {red} --outfile={output_ndvi_file} --calc="where((A+B)==0,-9999,(A-B)/(A+B))" --type=Float32 --NoDataValue=-9999 --co COMPRESS={compress} --co BIGTIFF=IF_SAFER')
+    
+    with rasterio.open(red) as red_src, \
+        rasterio.open(nir) as nir_src:
+        
+        meta = red_src.meta.copy()
+        meta.update({'dtype': 'int16', 'nodata': -9999})
+        
+        file_name = red.replace("B04","NDVI")
+        with rasterio.open(file_name, 'w', **meta) as dst:
+            
+            for ji, window in red_src.block_windows(1):
+            
+                red = red_src.read(1, window=window, masked=True).astype(np.float32)
+                nir = nir_src.read(1, window=window, masked=True).astype(np.float32)
+                
+                ndvi = (nir - red) / (nir + red)
+
+                ndvi_int16 = (ndvi * 10000).astype(np.int16)
+
+                dst.write(ndvi_int16, 1, window=window)
+
+        print(f"Raster saved to: {str(file_name)}")
 
 def evi_calc(nir, red, blue, compress='LZW'):
-    output_evi_file = nir.replace("-B08_", "-EVI-")
-    os.system(f'gdal_calc.py -A {nir} -B {red} -C {blue} --outfile={output_evi_file} --calc="where((A + 6.0 * B - 7.5 * C + 1.0) == 0, -9999, 2.5 * (A - B) / (A + 6.0 * B - 7.5 * C + 1.0))" --type=Float32 --NoDataValue=-9999 --co COMPRESS={compress} --co BIGTIFF=IF_SAFER')
+    
+    with rasterio.open(red) as red_src, \
+        rasterio.open(nir) as nir_src, \
+        rasterio.open(blue) as blue_src:
+        
+        meta = red_src.meta.copy()
+        meta.update({'dtype': 'int16', 'nodata': -9999})
+        
+        file_name = red.replace("B04","EVI")
+        with rasterio.open(file_name, 'w', **meta) as dst:
+            
+            for ji, window in red_src.block_windows(1):
+            
+                red = red_src.read(1, window=window, masked=True).astype(np.float32)
+                nir = nir_src.read(1, window=window, masked=True).astype(np.float32)
+                blue = blue_src.read(1, window=window, masked=True).astype(np.float32)
+                
+                evi =  2.5 * ((nir-red)/((nir+6*red-7.5*blue)+1))
+
+                evi_int16 = (evi * 10000).astype(np.int16)
+
+                dst.write(evi_int16, 1, window=window)
+                
+        print(f"Raster saved to: {str(file_name)}")
 
 def evi2_calc(nir, red, compress='LZW'):
-    output_evi2_file = nir.replace("-B08_", "-EVI2-")
-    os.system(f'gdal_calc.py -A {nir} -B {red} --outfile={output_evi2_file} --calc="2.5 * where((A + 2.4 * B + 1.0) == 0, -9999, (A - B) / (A + 2.4 * B + 1.0))" --type=Float32 --NoDataValue=-9999 --co COMPRESS={compress} --co BIGTIFF=IF_SAFER')
+    
+    with rasterio.open(red) as red_src, \
+        rasterio.open(nir) as nir_src:
+        
+        meta = red_src.meta.copy()
+        meta.update({'dtype': 'int16', 'nodata': -9999})
+        
+        file_name = red.replace("B04","EVI2")
+        with rasterio.open(file_name, 'w', **meta) as dst:
+            
+            for ji, window in red_src.block_windows(1):
+            
+                red = red_src.read(1, window=window, masked=True).astype(np.float32)
+                nir = nir_src.read(1, window=window, masked=True).astype(np.float32)
+                
+                evi2 = 2.5 * ((nir - red) / (nir + red + 1))
+                      
+                evi2_int16 = (evi2 * 10000).astype(np.int16)
+
+                dst.write(evi2_int16, 1, window=window)
+                
+        print(f"Raster saved to: {str(file_name)}")
 
 def savi_calc(nir, red, compress='LZW'):
-    output_savi_file = nir.replace("-B08_", "-SAVI-")
-    os.system(f'gdal_calc.py -A {nir} -B {red} --outfile={output_savi_file} --calc="where((A + B + 0.5) == 0, -9999, (1.5 * (A - B)) / (A + B + 0.5))" --type=Float32 --NoDataValue=-9999 --co COMPRESS={compress} --co BIGTIFF=IF_SAFER')
-
-def get_raster_dimensions(filename):
-    cmd = f'gdalinfo {filename}'
-    result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
     
-    if result.returncode != 0:
-        return None, None
-    
-    for line in result.stdout.split('\n'):
-        if 'Size is' in line:
-            dims_str = line.split('Size is ')[1].strip()
-            dims_str = dims_str.replace('(', '').replace(')', '')
-            dims = dims_str.split(', ')
-            width = int(dims[0].strip(','))
-            height = int(dims[1].strip(','))
-            return width, height
-    return None, None
-
-def ndbi_calc(band_1, band_2, compress='LZW'):
-    
-    output_file = band_2.replace("-B08_", "-NDBI-")
-    
-    dims_band_1 = get_raster_dimensions(band_1)
-    dims_band_2 = get_raster_dimensions(band_2)
-    
-    if dims_band_1 is None or dims_band_2 is None:
-        return
-    
-    band_1_resampled = band_1
-    band_2_resampled = band_2
-
-    if dims_band_1 != dims_band_2:
-        valid_widths = [d for d in [dims_band_1[0], dims_band_2[0]] if d is not None]
-        valid_heights = [d for d in [dims_band_1[1], dims_band_2[1]] if d is not None]
+    with rasterio.open(red) as red_src, \
+        rasterio.open(nir) as nir_src:
         
-        if not valid_widths or not valid_heights:
-            return
+        meta = red_src.meta.copy()
+        meta.update({'dtype': 'int16', 'nodata': -9999})
+        
+        file_name = red.replace("B04","SAVI")
+        with rasterio.open(file_name, 'w', **meta) as dst:
             
-        target_width = max(valid_widths)
-        target_height = max(valid_heights)
-        
-        if dims_band_1[0] != target_width or dims_band_1[1] != target_height:
-            temp_band_1_resampled = f"temp_resampled_band_1_{os.path.basename(band_1)}"
-            resample_cmd_band_1 = f'gdalwarp -ts {target_width} {target_height} -r bilinear {band_1} {temp_band_1_resampled}'
-            os.system(resample_cmd_band_1)
-            band_1_resampled = temp_band_1_resampled
-        
-        if dims_band_2[0] != target_width or dims_band_2[1] != target_height:
-            temp_band_2_resampled = f"temp_resampled_band_2_{os.path.basename(band_2)}"
-            resample_cmd_band_2 = f'gdalwarp -ts {target_width} {target_height} -r bilinear {band_2} {temp_band_2_resampled}'
-            os.system(resample_cmd_band_2)
-            band_2_resampled = temp_band_2_resampled
-    
-    os.system(f'gdal_calc.py -A {band_1_resampled} -B {band_2_resampled} --outfile={output_file} --calc="where((A+B)==0,-9999,(A-B)/(A+B))" --type=Float32 --NoDataValue=-9999 --co COMPRESS={compress} --co BIGTIFF=IF_SAFER')
-    
-    if band_1_resampled != band_1 and os.path.exists(band_1_resampled):
-        os.remove(band_1_resampled)
-    if band_2_resampled != band_2 and os.path.exists(band_2_resampled):
-        os.remove(band_2_resampled)
-   
-def mndwi_calc(band_1, band_2, compress='LZW'):
-    
-    output_file = band_2.replace("-B03_", "-MNDWI-")
-    
-    dims_band_1 = get_raster_dimensions(band_1)
-    dims_band_2 = get_raster_dimensions(band_2)
-    
-    if dims_band_1 is None or dims_band_2 is None:
-        return
-    
-    band_1_resampled = band_1
-    band_2_resampled = band_2
-
-    if dims_band_1 != dims_band_2:
-        valid_widths = [d for d in [dims_band_1[0], dims_band_2[0]] if d is not None]
-        valid_heights = [d for d in [dims_band_1[1], dims_band_2[1]] if d is not None]
-        
-        if not valid_widths or not valid_heights:
-            return
+            for ji, window in red_src.block_windows(1):
             
-        target_width = max(valid_widths)
-        target_height = max(valid_heights)
-        
-        if dims_band_1[0] != target_width or dims_band_1[1] != target_height:
-            temp_band_1_resampled = f"temp_resampled_band_1_{os.path.basename(band_1)}"
-            resample_cmd_band_1 = f'gdalwarp -ts {target_width} {target_height} -r bilinear {band_1} {temp_band_1_resampled}'
-            os.system(resample_cmd_band_1)
-            band_1_resampled = temp_band_1_resampled
-        
-        if dims_band_2[0] != target_width or dims_band_2[1] != target_height:
-            temp_band_2_resampled = f"temp_resampled_band_2_{os.path.basename(band_2)}"
-            resample_cmd_band_2 = f'gdalwarp -ts {target_width} {target_height} -r bilinear {band_2} {temp_band_2_resampled}'
-            os.system(resample_cmd_band_2)
-            band_2_resampled = temp_band_2_resampled
+                red = red_src.read(1, window=window, masked=True).astype(np.float32)
+                nir = nir_src.read(1, window=window, masked=True).astype(np.float32)
+                
+                savi = ((1+0.5)*(nir - red))/(nir + red + 0.5)
+
+                savi_int16 = (savi * 10000).astype(np.int16)
+
+                dst.write(savi_int16, 1, window=window)
+                
+        print(f"Raster saved to: {str(file_name)}")
+
+def ndbi_calc(swir_path, nir_path, compress='LZW'):
     
-    os.system(f'gdal_calc.py -A {band_1_resampled} -B {band_2_resampled} --outfile={output_file} --calc="where((A+B)==0,-9999,(B-A)/(B+A))" --type=Float32 --NoDataValue=-9999 --co COMPRESS={compress} --co BIGTIFF=IF_SAFER')
-    
-    if band_1_resampled != band_1 and os.path.exists(band_1_resampled):
-        os.remove(band_1_resampled)
-    if band_2_resampled != band_2 and os.path.exists(band_2_resampled):
-        os.remove(band_2_resampled)
-   
+    with rasterio.open(nir_path) as nir_src, \
+         rasterio.open(swir_path) as swir_src:
+        
+        meta = nir_src.meta.copy()
+        meta.update({
+            'dtype': 'int16', 
+            'nodata': -9999,
+            'count': 1,
+            'compress': compress
+        })
+        
+        file_name = nir_path.replace("B08", "NDBI")
+        
+        with rasterio.open(file_name, 'w', **meta) as dst:
+            
+            for ji, nir_window in nir_src.block_windows(1):
+            
+                scale = 0.5
+                swir_window = Window(
+                    col_off=int(nir_window.col_off * scale),
+                    row_off=int(nir_window.row_off * scale),
+                    width=int(nir_window.width * scale),
+                    height=int(nir_window.height * scale)
+                )
+                
+                nir = nir_src.read(1, window=nir_window, masked=True).astype(np.float32)
+                
+                swir = swir_src.read(
+                    1, 
+                    window=swir_window, 
+                    out_shape=nir.shape, 
+                    resampling=Resampling.bilinear,
+                    masked=True
+                ).astype(np.float32)
+                
+                with np.errstate(divide='ignore', invalid='ignore'):
+                    ndbi = (swir - nir) / (swir + nir)
+
+                nodata_mask = np.ma.getmask(ndbi)
+                ndbi_int16 = (ndbi * 10000).astype(np.int16)
+                ndbi_int16[nodata_mask] = meta['nodata']
+
+                dst.write(ndbi_int16, 1, window=nir_window)
+
+        print(f"Raster saved to: {str(file_name)}")
+
 def calculate_spectral_indices(input_folder: str, spectral_indices) -> str:
     for spectral_indice in spectral_indices:
 
         if spectral_indice == "NDVI":
-            pattern_nir = r'-B08_'
+            pattern_nir = r'_B08_'
             files_nir = [
                 os.path.join(input_folder, f) for f in os.listdir(input_folder)
                 if re.search(pattern_nir, f)
             ]
             
-            pattern_red = r'-B04_'
+            pattern_red = r'_B04_'
             files_red = [
                 os.path.join(input_folder, f) for f in os.listdir(input_folder)
                 if re.search(pattern_red, f)
             ]
 
             for i in range(min(len(files_nir), len(files_red))):
+                fix_negatives(files_nir[i])
+                fix_negatives(files_red[i])
                 ndvi_calc(files_nir[i], files_red[i])
         
         if spectral_indice == "EVI":
-            pattern_nir = r'-B08_'
+            pattern_nir = r'_B08_'
             files_nir = [
                 os.path.join(input_folder, f) for f in os.listdir(input_folder)
                 if re.search(pattern_nir, f)
             ]
             
-            pattern_red = r'-B04_'
+            pattern_red = r'_B04_'
             files_red = [
                 os.path.join(input_folder, f) for f in os.listdir(input_folder)
                 if re.search(pattern_red, f)
             ]
 
-            pattern_blue = r'-B02_'
+            pattern_blue = r'_B02_'
             files_blue = [
                 os.path.join(input_folder, f) for f in os.listdir(input_folder)
                 if re.search(pattern_blue, f)
             ]
             
             for i in range(min(len(files_nir), len(files_red))):
+                fix_negatives(files_nir[i])
+                fix_negatives(files_red[i])
+                fix_negatives(files_blue[i])
                 evi_calc(files_nir[i], files_red[i], files_blue[i])
         
         if spectral_indice == "EVI2":
-            pattern_nir = r'-B08_'
+            pattern_nir = r'_B08_'
             files_nir = [
                 os.path.join(input_folder, f) for f in os.listdir(input_folder)
                 if re.search(pattern_nir, f)
             ]
             
-            pattern_red = r'-B04_'
+            pattern_red = r'_B04_'
             files_red = [
                 os.path.join(input_folder, f) for f in os.listdir(input_folder)
                 if re.search(pattern_red, f)
             ]
 
             for i in range(min(len(files_nir), len(files_red))):
+                fix_negatives(files_nir[i])
+                fix_negatives(files_red[i])
                 evi2_calc(files_nir[i], files_red[i])
         
         if spectral_indice == "SAVI":
-            pattern_nir = r'-B08_'
+            pattern_nir = r'_B08_'
             files_nir = [
                 os.path.join(input_folder, f) for f in os.listdir(input_folder)
                 if re.search(pattern_nir, f)
             ]
             
-            pattern_red = r'-B04_'
+            pattern_red = r'_B04_'
             files_red = [
                 os.path.join(input_folder, f) for f in os.listdir(input_folder)
                 if re.search(pattern_red, f)
             ]
 
             for i in range(min(len(files_nir), len(files_red))):
+                fix_negatives(files_nir[i])
+                fix_negatives(files_red[i])
                 savi_calc(files_nir[i], files_red[i])
         
         if spectral_indice == "NDBI":
-            pattern_swir = r'-B11_'
+            pattern_swir = r'_B11_'
             files_swir = [
                 os.path.join(input_folder, f) for f in os.listdir(input_folder)
                 if re.search(pattern_swir, f)
             ]
             
-            pattern_nir = r'-B08_'
+            pattern_nir = r'_B08_'
             files_nir = [
                 os.path.join(input_folder, f) for f in os.listdir(input_folder)
                 if re.search(pattern_nir, f)
             ]
             
             for i in range(min(len(files_swir), len(files_nir))):
-                ndbi_calc(band_1=files_swir[i],band_2=files_nir[i])
-                        
-        if spectral_indice == "MNDWI":
-            
-            pattern_swir = r'-B11-'
-            files_swir = [
-                os.path.join(input_folder, f) for f in os.listdir(input_folder)
-                if re.search(pattern_swir, f)
-            ]
-            
-            pattern_green = r'-B03_'
-            files_green = [
-                os.path.join(input_folder, f) for f in os.listdir(input_folder)
-                if re.search(pattern_green, f)
-            ]
-
-            for i in range(min(len(files_swir), len(files_green))):
-                mndwi_calc(band_1=files_swir[i],band_2=files_green[i])
+                fix_negatives(files_nir[i])
+                fix_negatives(files_swir[i])
+                ndbi_calc(files_swir[i],files_nir[i])
+     
