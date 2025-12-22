@@ -39,7 +39,7 @@ Changes
   - ``smosaic-introduction``: Example of creating RGB mosaics for a scene in Pará state
   - ``smosaic-bdc-favelas-sp``: Experiment on generating image mosaics for monitoring favelas in São Paulo state
   - ``smosaic-agricultural-monitoring-pr``: Experiment on generating image mosaics for agricultural monitoring in Paraná state
-* **Sentinel-2/MSI Level-1C**: Added full support for S2_L1C_BUNDLE-1 data.  🛰️
+* **Sentinel-2/MSI Level-1C**: Added full support for S2_L1C_BUNDLE-1 data.
 * **Fmask external cloud support**: Added support for Fmask (algorithm for detecting clouds and cloud shadows).
 
 0.5.0 (2025-11-17)
@@ -106,13 +106,12 @@ Changes
     * ``smosaic-data-cube.ipynb``: A complete example of creating a Sentinel-2 10 days data cube for a given bbox.
 * **Data Cube Support**:  Added support for data cube generation using ``end_year``, ``end_month``, ``end_day`` and ``duration_days`` parameters.
 * **Refactor filter_scenes Function**: Completely refactored ``filter_scenes`` function now use the grid geometry instead of the colleciton.json file.
-- **Implemented parallel processing**: to significantly speed up mosaic generation by processing multiple time steps concurrently.✨
-
+- **Implemented parallel processing**: to significantly speed up mosaic generation by processing multiple time steps concurrently.
 
 Version 0.0.1 (2025-06-04)
 ------------------
 
 * **Initial Release**: First implementation of ``mosaic`` function, with ``collection_get_data``, ``get_dataset_extents``, ``merge_tifs`` and ``clip_raster`` functions.
 * Completed the smosaic exemple notebook.
-* **Sentinel 2**: Added full support for Sentinel 2 data.  🛰️
-* **COG Support**: Added output as Cloud Optimized GeoTIFFs (COGs) with RasterIO. 
+* **Sentinel 2**: Added full support for Sentinel 2 data.
+* **COG Support**: Added output as Cloud Optimized GeoTIFFs (COGs) with RasterIO.
