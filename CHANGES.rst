@@ -40,7 +40,7 @@ Changes
   - ``smosaic-bdc-favelas-sp``: Experiment on generating image mosaics for monitoring favelas in São Paulo state
   - ``smosaic-agricultural-monitoring-pr``: Experiment on generating image mosaics for agricultural monitoring in Paraná state
 * **Sentinel-2/MSI Level-1C **: Added full support for S2_L1C_BUNDLE-1 data.  🛰️
-* **Fmask external cloud support**: Added suport for Fmask (algorithm for detecting clouds and cloud shadows).
+* **Fmask external cloud support**: Added support for Fmask (algorithm for detecting clouds and cloud shadows).
 
 0.5.0 (2025-11-17)
 ------------------
