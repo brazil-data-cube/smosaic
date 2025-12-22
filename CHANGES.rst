@@ -19,6 +19,29 @@
 Changes
 =======
 
+0.6.0 (2025-12-22)
+------------------
+
+* **Standardized Output Resolution**: Added new ``reproject_tif()`` function that ensures all output mosaics maintain consistent 10,-10 pixel size
+* **Projection Consistency**: All output mosaics now maintain uniform spatial reference system using the standardized Albers projection
+* **Sentinel-2 Baseline Correction Refactor**: Redesigned the baseline correction function to properly handle Sentinel-2 processing baseline numbers
+* **Enhanced Output Bands Refactor**: Completely redesigned mosaic outputs to include provenance and cloud bands by default alongside requested spectral bands
+* **Mosaic Profiles**: Added ``profile`` parameter to mosaic function, providing pre-configured band selections instead of manually selecting bands. Currently supports two profiles:
+  - ``urban_analysis``: Pre-selects RGB (``Red``, ``Green``, ``Blue``) bands along with ``NDVI`` and ``NDBI`` indices
+  - ``crop_condition``: Pre-selects four vegetation indices: ``NDVI``, ``EVI``, ``EVI2``, and ``SAVI``
+* **Spectral Indices Calculation**: Added ``smosaic_spectral_indices()`` function to generate spectral indices mosaics, currently supporting five indices:
+  - ``ndvi``: Normalized Difference Vegetation Index
+  - ``evi``: Enhanced Vegetation Index
+  - ``evi2``: Two-band Enhanced Vegetation Index
+  - ``savi``: Soil-Adjusted Vegetation Index
+  - ``ndbi``: Normalized Difference Built-up Index
+* **New Example Notebooks**: Added experimental Jupyter notebooks for article demonstrations:
+  - ``smosaic-introduction``: Example of creating RGB mosaics for a scene in Pará state
+  - ``smosaic-bdc-favelas-sp``: Experiment on generating image mosaics for monitoring favelas in São Paulo state
+  - ``smosaic-agricultural-monitoring-pr``: Experiment on generating image mosaics for agricultural monitoring in Paraná state
+* **Sentinel-2/MSI Level-1C**: Added full support for S2_L1C_BUNDLE-1 data.  🛰️
+* **Fmask external cloud support**: Added support for Fmask (algorithm for detecting clouds and cloud shadows).
+
 0.5.0 (2025-11-17)
 ------------------
 
@@ -34,7 +57,6 @@ Changes
 * **Conda Environment Guide**: Added ``conda-environment.md`` documentation for creating Conda environments to install and run the library
 * **Enhanced Output Bands**: All mosaic outputs now include provenance and cloud bands by default alongside requested spectral bands
 * **Progress Tracking**: Enhanced library logging output with detailed progress tracking, displaying percentage completion per scene and band during mosaic generation
-
 
 0.4.0 (2025-11-10)
 ------------------

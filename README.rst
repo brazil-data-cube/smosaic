@@ -67,7 +67,7 @@ Changes
 See `CHANGES.rst <./CHANGES.rst>`_
 
 
-Using WLTS in the Command Line
+Using smosaic in the Command Line
 ==============================
 
 See `CLI.rst <./CLI.rst>`_.

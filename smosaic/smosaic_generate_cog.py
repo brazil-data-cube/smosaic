@@ -2,6 +2,8 @@ import os
 
 from osgeo import gdal
 
+gdal.PushErrorHandler('CPLQuietErrorHandler')
+gdal.UseExceptions()  
 
 def generate_cog(input_folder: str, input_filename: str, compress: str = 'LZW') -> str:
     """Generate COG file."""
@@ -20,11 +22,6 @@ def generate_cog(input_folder: str, input_filename: str, compress: str = 'LZW') 
             outputType=gdal.GDT_Int16
         )
     )
-
-    try:
-        os.remove(input_file)
-    except:
-        pass
 
     print(f"Raster saved to: {output_file}")
     

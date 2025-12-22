@@ -4,6 +4,8 @@ import shapely
 from osgeo import gdal
 from shapely.ops import transform as shapely_transform
 
+gdal.PushErrorHandler('CPLQuietErrorHandler')
+gdal.UseExceptions()  
 
 def get_dataset_extents(datasets):
     extents = []

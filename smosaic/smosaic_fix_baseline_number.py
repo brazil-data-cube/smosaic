@@ -11,7 +11,12 @@ def fix_baseline_number(input_folder: str, input_filename: str, baseline_number:
         height, width = src.shape  
 
     if int(baseline_number) > 400:
-        new_image_data = image_data - 1000
+
+        new_image_data = image_data.astype('int16') - 1000
+        
+        profile.update({
+            'dtype': 'int16'
+        })
 
         with rasterio.open(input_file, 'w', **profile) as dst:
             dst.write(new_image_data)

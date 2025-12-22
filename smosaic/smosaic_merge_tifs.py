@@ -8,7 +8,7 @@ from shapely.ops import transform as shapely_transform
 from rasterio.merge import merge as rasterio_merge
 from rasterio.warp import calculate_default_transform, reproject, Resampling
 
-from smosaic.smosaic_utils import get_all_cloud_configs
+from smosaic.smosaic_utils import clean_dir, get_all_cloud_configs
 
 
 def merge_tifs(tif_files, output_path, band, path_row=None, extent=None):
@@ -118,5 +118,5 @@ def merge_tifs(tif_files, output_path, band, path_row=None, extent=None):
 
     for src in src_files_to_mosaic:
         src.close()
-    
+
     return output_path

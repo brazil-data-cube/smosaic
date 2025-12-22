@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import pyproj
 import shapely
@@ -20,6 +21,12 @@ CLOUD_CONFIG = {
         'non_cloud_values': [4, 5, 6],
         'cloud_values': [0, 1, 2, 3, 7, 8, 9, 10, 11],
         'no_data_value': 0
+    },
+    'S2_L1C_BUNDLE-1': {
+        'cloud_band': 'FMASK',
+        'non_cloud_values': [0, 1],
+        'cloud_values': [2, 3, 4],
+        'no_data_value': 255
     }
 }
 
@@ -191,15 +198,51 @@ def geometry_collides_with_bbox(geometry,input_bbox):
     return geometry.intersects(bbox_polygon)
 
 
-def clean_dir(data_dir):
-    files_to_delete = [
-        os.path.join(data_dir, f) 
-        for f in os.listdir(data_dir)  
-        if  f.startswith("merge_") or f.startswith("temp_") or f.startswith("provenance_") or f.startswith("clear_") or f.startswith("cloud_")
-    ]
-    
-    for f in files_to_delete:
-        try:
-            os.remove(f)
-        except:
-            pass
+def clean_dir(data_dir, scene=None, date_list=None, date_interval=None):
+
+
+    if date_interval:
+        
+        pattern_date = re.escape(date_interval)
+
+        files_to_delete = [
+            f for f in os.listdir(data_dir)
+            if re.search(pattern_date, f)
+        ]
+
+        for f in files_to_delete:
+            try:
+                pass
+                os.remove(f)
+            except:
+                pass
+
+    elif date_list:     
+        for date in date_list:
+            pattern_scene = r'_T' + re.escape(scene)
+            pattern_date = re.escape(date)
+
+            files_to_delete = [
+                f for f in os.listdir(data_dir)
+                if re.search(pattern_scene, f) and re.search(pattern_date, f)
+            ]
+
+            for f in files_to_delete:
+                try:
+                    pass
+                    os.remove(f)
+                except:
+                    pass
+
+    else:
+        files_to_delete = [
+            os.path.join(data_dir, f) 
+            for f in os.listdir(data_dir)
+            if f.endswith(".tif") and not f.endswith("_COG.tif")
+        ]
+
+        for f in files_to_delete:
+            try:
+                os.remove(f)
+            except:
+                pass

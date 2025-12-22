@@ -33,6 +33,7 @@ notebooks/temp_*
 notebooks/merge_*
 notebooks/provenance_*
 notebooks/cloud_*
+*.zip
 S2_L2A-1
 clear_*
 temp_*
