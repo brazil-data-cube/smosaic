@@ -68,7 +68,7 @@ See `CHANGES.rst <./CHANGES.rst>`_
 
 
 Using smosaic in the Command Line
-==============================
+=================================
 
 See `CLI.rst <./CLI.rst>`_.
 
