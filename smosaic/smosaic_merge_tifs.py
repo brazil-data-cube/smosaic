@@ -28,13 +28,24 @@ def merge_tifs(tif_files, output_path, band, path_row=None, extent=None):
     
     reprojected_files = []
     bounds = []
-    
+
+    cloud_dict = get_all_cloud_configs()
+    cloud_bands = [item['cloud_band'] for item in cloud_dict.values()]
+
+    if band in cloud_bands:
+        nodata = next((config['no_data_value'] for config in cloud_dict.values() if config['cloud_band'] == band), None)
+    else:
+        nodata = 0 
+
     for tif in tif_files:
         with rasterio.open(tif) as src:
-            
+
+            profile = src.profile  
             left, bottom, right, top = src.bounds
             src_extent = shapely.geometry.box(left, bottom, right, top)
-            
+
+            profile['nodata'] = nodata
+
             proj_converter = pyproj.Transformer.from_crs(
                 src.crs, 
                 'EPSG:4326', 
@@ -51,7 +62,7 @@ def merge_tifs(tif_files, output_path, band, path_row=None, extent=None):
             )
             
             reproj_data = np.zeros((src.count, height, width), dtype=src.dtypes[0])
-            
+
             reproject(
                 source=rasterio.band(src, range(1, src.count + 1)),
                 destination=reproj_data,
@@ -60,19 +71,11 @@ def merge_tifs(tif_files, output_path, band, path_row=None, extent=None):
                 dst_transform=dst_transform,
                 dst_crs=dst_crs,
                 resampling=Resampling.nearest,
-                nodata=0
+                nodata=nodata
             )
             
             temp_path = f'temp_{os.path.basename(tif)}'
             reprojected_files.append(temp_path)
-
-            cloud_dict = get_all_cloud_configs()
-            cloud_bands = [item['cloud_band'] for item in cloud_dict.values()]
-
-            if band in cloud_bands:
-                nodata = 0 
-            else:
-                nodata = 0 
 
             with rasterio.open(
                 temp_path,
@@ -84,7 +87,7 @@ def merge_tifs(tif_files, output_path, band, path_row=None, extent=None):
                 dtype=reproj_data.dtype,
                 crs=dst_crs,
                 transform=dst_transform,
-                nodata= nodata
+                nodata=nodata
             ) as dst:
                 dst.write(reproj_data)
     
@@ -102,7 +105,7 @@ def merge_tifs(tif_files, output_path, band, path_row=None, extent=None):
         src = rasterio.open(f)
         src_files_to_mosaic.append(src)
     
-    mosaic, out_trans = rasterio_merge(src_files_to_mosaic, bounds=extent)
+    mosaic, out_trans = rasterio_merge(src_files_to_mosaic, bounds=extent, nodata=nodata)
     
     out_meta = src.meta.copy()
     out_meta.update({
@@ -110,7 +113,8 @@ def merge_tifs(tif_files, output_path, band, path_row=None, extent=None):
         "height": mosaic.shape[1],
         "width": mosaic.shape[2],
         "transform": out_trans,
-        "crs": 'EPSG:4326'
+        "crs": 'EPSG:4326',
+        "nodata": nodata
     })
     
     with rasterio.open(output_path, "w", **out_meta) as dest:

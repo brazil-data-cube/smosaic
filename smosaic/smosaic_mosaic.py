@@ -107,7 +107,8 @@ def mosaic(name, data_dir, stac_url, collection, output_dir, start_year, start_m
     
     collection_name = dict_collection['collection']
 
-    collection_get_data(stac, dict_collection, data_dir=data_dir)
+    if not os.path.exists(data_dir+"/"+collection):
+        collection_get_data(stac, dict_collection, data_dir=data_dir)
 
     num_processes = multiprocessing.cpu_count()
 
@@ -122,11 +123,11 @@ def mosaic(name, data_dir, stac_url, collection, output_dir, start_year, start_m
     with multiprocessing.Pool(processes=num_processes) as pool:
         results = pool.starmap(process_period, args_for_processes)
 
-    if(len(spectral_indices)):
-        calculate_spectral_indices(input_folder=output_dir,spectral_indices=spectral_indices)
+    #if(len(spectral_indices)):
+    #    calculate_spectral_indices(input_folder=output_dir,spectral_indices=spectral_indices)
 
-    clean_dir(data_dir)
-    clean_dir(output_dir)
+    #clean_dir(data_dir)
+    #clean_dir(output_dir)
 
 
 def process_period(period, mosaic_method, data_dir, collection_name, bands, bbox, output_dir, duration_days, duration_months, name, geom, reference_date):
@@ -238,7 +239,7 @@ def process_period(period, mosaic_method, data_dir, collection_name, bands, bbox
             sorted_data = sorted(band_list, key=lambda x: x['distance_days'])
 
             cloud_sorted_data = sorted(cloud_list, key=lambda x: x['distance_days'])
-
+        
         if (i==0):
             ordered_lists = merge_scene_provenance_cloud(sorted_data, cloud_sorted_data, scenes, collection_name, bands[i], data_dir, start_date, end_date)
         else:

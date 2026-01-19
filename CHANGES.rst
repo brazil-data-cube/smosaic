@@ -19,6 +19,13 @@
 Changes
 =======
 
+0.7.0 (2026-01-19)
+------------------
+
+* **Cloud Mask Handling**: Resolved a bug in the ``merge_tifs()`` function to properly handle "No Data" values in the output cloud mask, ensuring seamless mosaic mask generation.
+* **Custom Projections**: Introduced the ``projection_output`` parameter, allowing users to define a custom CRS for the output mosaic (defaults to EPSG:4326).
+* **Automated Grid Cropping**: Added an optional ``grid_crop`` parameter; when enabled, the final result is automatically clipped to the specific geometry of the input grid tile.
+
 0.6.0 (2025-12-22)
 ------------------
 

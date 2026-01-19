@@ -25,7 +25,7 @@ CLOUD_CONFIG = {
     'S2_L1C_BUNDLE-1': {
         'cloud_band': 'FMASK',
         'non_cloud_values': [0, 1],
-        'cloud_values': [2, 3, 4],
+        'cloud_values': [2, 3, 4, 255],
         'no_data_value': 255
     }
 }

@@ -1,5 +1,6 @@
 import os
 import tqdm
+import shutil
 import datetime
 import rasterio
 
@@ -52,7 +53,7 @@ def merge_scene(sorted_data, cloud_sorted_data, scenes, collection_name, band, d
             clear_mask = np.isin(cloud_mask, cloud_dict[collection_name]['non_cloud_values'])
 
             if 'nodata' not in profile or profile['nodata'] is None:
-                profile['nodata'] = 0  
+                profile['nodata'] = 0   # arrumar caso ndvi
 
             masked_image = np.full_like(image_data, profile['nodata'])
             masked_image[:, clear_mask] = image_data[:, clear_mask]  
@@ -127,6 +128,7 @@ def merge_scene_provenance_cloud(sorted_data, cloud_sorted_data, scenes, collect
 
             with rasterio.open(cloud_images[i]) as mask_src:
                 cloud_mask = mask_src.read(1) 
+                cloud_profile = src.profile  
                 cloud_mask = mask_src.read(
                     1,  
                     out_shape=(height, width), 
@@ -137,12 +139,14 @@ def merge_scene_provenance_cloud(sorted_data, cloud_sorted_data, scenes, collect
             clear_mask = np.isin(cloud_mask, cloud_dict[collection_name]['non_cloud_values'])
 
             if 'nodata' not in profile or profile['nodata'] is None:
-                profile['nodata'] = 0  
+                profile['nodata'] = 0 
+            
+            cloud_profile['nodata'] = cloud_dict[collection_name]['no_data_value']
 
             masked_image = np.full_like(image_data, profile['nodata'])
             masked_image[:, clear_mask] = image_data[:, clear_mask]  
 
-            masked_cloud_image = np.full_like(cloud_mask, profile['nodata'])
+            masked_cloud_image = np.full_like(cloud_mask, cloud_profile['nodata'])
             masked_cloud_image[clear_mask] = cloud_mask[clear_mask]
 
             parts = os.path.basename(image_filename).split('_')
@@ -161,17 +165,15 @@ def merge_scene_provenance_cloud(sorted_data, cloud_sorted_data, scenes, collect
                 profile['driver'] = 'GTiff'
                 with rasterio.open(os.path.join(data_dir, non_clear_band_file_name), 'w', **profile) as dst:
                     dst.write(image_data)
-                non_clear_cloud_file_name = f"cloud_non_clear_{cloud_filename}.tif"
-                with rasterio.open(os.path.join(data_dir, non_clear_cloud_file_name), 'w', **profile) as dst:
-                    dst.write(cloud_mask, 1) 
+                shutil.copy2(cloud_images[i], os.path.join(data_dir))
                 non_clear_provenance = np.full_like(image_data, day_of_year)
                 non_clear_provenance_file_name = f"provenance_non_clear_{image_filename}.tif"
                 with rasterio.open(os.path.join(data_dir, non_clear_provenance_file_name), 'w', **profile) as dst:
                     dst.write(non_clear_provenance)
                 non_clear_band.append(os.path.join(data_dir, non_clear_band_file_name))
-                non_clear_clou.append(os.path.join(data_dir, non_clear_cloud_file_name))
+                non_clear_clou.append(os.path.join(data_dir, cloud_images[i]))
                 non_clear_prov.append(os.path.join(data_dir, non_clear_provenance_file_name))
-        
+
             valid_mask = masked_image != profile['nodata']
             provenance[valid_mask] = day_of_year
 
@@ -192,7 +194,7 @@ def merge_scene_provenance_cloud(sorted_data, cloud_sorted_data, scenes, collect
             with rasterio.open(os.path.join(data_dir, provenance_file_name), 'w', **profile) as dst:
                 dst.write(provenance)
 
-            with rasterio.open(os.path.join(data_dir, cloud_item_file_name), 'w', **profile) as dst:
+            with rasterio.open(os.path.join(data_dir, cloud_item_file_name), 'w', **cloud_profile) as dst:
                 dst.write(masked_cloud_image, 1)
 
         temp_images = temp_images + non_clear_band
@@ -219,7 +221,7 @@ def merge_scene_provenance_cloud(sorted_data, cloud_sorted_data, scenes, collect
 
         merge_tifs(tif_files=provenance_temp_images, output_path=provenance_output_file, band=band, path_row=scene, extent=extents)
 
-        merge_tifs(tif_files=temp_cloud_images, output_path=cloud_output_file, band=band, path_row=scene, extent=extents)
+        merge_tifs(tif_files=temp_cloud_images, output_path=cloud_output_file, band=cloud_dict[collection_name]["cloud_band"], path_row=scene, extent=extents)
 
         merge_files.append(output_file)
         provenance_merge_files.append(provenance_output_file)
