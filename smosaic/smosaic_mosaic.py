@@ -20,10 +20,10 @@ from smosaic.smosaic_merge_scene import merge_scene, merge_scene_provenance_clou
 from smosaic.smosaic_merge_tifs import merge_tifs
 from smosaic.smosaic_reproject_tif import reproject_tif
 from smosaic.smosaic_spectral_indices import calculate_spectral_indices
-from smosaic.smosaic_utils import add_days_to_date, add_months_to_date, clean_dir, days_between_dates, get_all_cloud_configs
+from smosaic.smosaic_utils import add_days_to_date, add_months_to_date, clean_dir, days_between_dates, get_all_cloud_configs, load_jsons
 
 
-def mosaic(name, data_dir, stac_url, collection, output_dir, start_year, start_month, start_day, mosaic_method, bands=None, reference_date=None, duration_days=None, end_year=None, end_month=None, end_day=None, duration_months=None, geom=None, grid=None, grid_id=None, bbox=None, profile=None):
+def mosaic(name, data_dir, stac_url, collection, output_dir, start_year, start_month, start_day, mosaic_method, bands=None, reference_date=None, duration_days=None, end_year=None, end_month=None, end_day=None, duration_months=None, geom=None, grid=None, tile_id=None, bbox=None, profile=None, projection_output=4326):
     
     clean_dir(data_dir)
 
@@ -32,8 +32,32 @@ def mosaic(name, data_dir, stac_url, collection, output_dir, start_year, start_m
     if collection not in ['S2_L2A-1','S2_L1C_BUNDLE-1']: #'S2-16D-2'
         return print(f"{collection['collection']} collection not yet supported.")
     
+    # grid
+    if (grid != None and tile_id!= None):
+        if (grid == "br_states"):
+            br_states = load_jsons("states")
+            
+            state_code = tile_id.upper()
+            
+            for feature in br_states['features']:
+                if feature['id'] == state_code:
+                    geom = feature['geometry']
+                    bbox = shapely.geometry.shape(geom).bounds
+                    geom = shapely.geometry.shape(geom["features"][0]["geometry"]) if geom["type"] == "FeatureCollection" else shapely.geometry.shape(geom)
+        else:
+            bdc_grids_data = load_jsons("grids")
+            selected_tile = ''
+            for g in bdc_grids_data['grids']:
+                if (g['name'] == grid):
+                    for tile in g['features']:
+                        if tile['properties']['tile'] == tile_id:
+                            selected_tile = tile
+            geom = selected_tile['geometry']
+            bbox = shapely.geometry.shape(geom).bounds
+            geom = shapely.geometry.shape(geom["features"][0]["geometry"]) if geom["type"] == "FeatureCollection" else shapely.geometry.shape(geom)
+
     #geometry
-    if (geom):
+    elif (geom):
         bbox = geom.bounds
     
     #bbox
@@ -114,7 +138,7 @@ def mosaic(name, data_dir, stac_url, collection, output_dir, start_year, start_m
 
     args_for_processes = [
         (period, mosaic_method, data_dir, collection_name, bands, bbox, output_dir, 
-         duration_days, duration_months, name, geom, reference_date) 
+         duration_days, duration_months, name, geom, reference_date, projection_output) 
         for period in periods
     ]
 
@@ -123,14 +147,14 @@ def mosaic(name, data_dir, stac_url, collection, output_dir, start_year, start_m
     with multiprocessing.Pool(processes=num_processes) as pool:
         results = pool.starmap(process_period, args_for_processes)
 
-    #if(len(spectral_indices)):
-    #    calculate_spectral_indices(input_folder=output_dir,spectral_indices=spectral_indices)
+    if(len(spectral_indices)):
+        calculate_spectral_indices(input_folder=output_dir,spectral_indices=spectral_indices)
 
-    #clean_dir(data_dir)
+    clean_dir(data_dir)
     #clean_dir(output_dir)
 
 
-def process_period(period, mosaic_method, data_dir, collection_name, bands, bbox, output_dir, duration_days, duration_months, name, geom, reference_date):
+def process_period(period, mosaic_method, data_dir, collection_name, bands, bbox, output_dir, duration_days, duration_months, name, geom, reference_date, projection_output):
 
     start_date = period['start']
     end_date = period['end']
@@ -221,7 +245,7 @@ def process_period(period, mosaic_method, data_dir, collection_name, bands, bbox
 
         for item in cloud_list:
             item['file'] = cloud_lookup.get((item['date'], item['scene']), '')
-        
+
         if (mosaic_method=='lcf'):
 
             sorted_data = sorted(band_list, key=lambda x: x['clean_percentage'], reverse=True)
@@ -241,9 +265,9 @@ def process_period(period, mosaic_method, data_dir, collection_name, bands, bbox
             cloud_sorted_data = sorted(cloud_list, key=lambda x: x['distance_days'])
         
         if (i==0):
-            ordered_lists = merge_scene_provenance_cloud(sorted_data, cloud_sorted_data, scenes, collection_name, bands[i], data_dir, start_date, end_date)
+            ordered_lists = merge_scene_provenance_cloud(sorted_data, cloud_sorted_data, scenes, collection_name, bands[i], data_dir, projection_output, start_date, end_date)
         else:
-            ordered_lists = merge_scene(sorted_data, cloud_sorted_data, scenes, collection_name, bands[i], data_dir, start_date, end_date)
+            ordered_lists = merge_scene(sorted_data, cloud_sorted_data, scenes, collection_name, bands[i], data_dir, projection_output, start_date, end_date,)
 
         filename = sorted_data[0]['file'].split('/')[-1]
         if (collection_name =='S2_L2A-1'):
@@ -280,17 +304,18 @@ def process_period(period, mosaic_method, data_dir, collection_name, bands, bbox
         
         datasets = [rasterio.open(file) for file in  ordered_lists['merge_files']]        
         
-        extents = get_dataset_extents(datasets)
+        extents = get_dataset_extents(datasets, projection_output)
 
-        merge_tifs(tif_files=ordered_lists['merge_files'], output_path=output_file, band=band, path_row=name, extent=extents)
+        merge_tifs(tif_files=ordered_lists['merge_files'], output_path=output_file, band=band, path_row=name, extent=extents, projection_output=projection_output)
         if (i==0):
-            merge_tifs(tif_files=ordered_lists['provenance_merge_files'], output_path=provenance_output_file, band=band, path_row=name, extent=extents)
-            merge_tifs(tif_files=ordered_lists['cloud_merge_files'], output_path=cloud_data_output_file, band=cloud_dict[collection_name]["cloud_band"], path_row=name, extent=extents)
+            merge_tifs(tif_files=ordered_lists['provenance_merge_files'], output_path=provenance_output_file, band=band, path_row=name, extent=extents, projection_output=projection_output)
+            merge_tifs(tif_files=ordered_lists['cloud_merge_files'], output_path=cloud_data_output_file, band=cloud_dict[collection_name]["cloud_band"], path_row=name, extent=extents, projection_output=projection_output)
 
-        clip_raster(input_raster_path=output_file, output_folder=output_dir, clip_geometry=geom, output_filename=file_name+".tif")
+
+        clip_raster(input_raster_path=output_file, output_folder=output_dir, clip_geometry=geom, projection_output=projection_output, output_filename=file_name+".tif")
         if (i==0):
-            clip_raster(input_raster_path=cloud_data_output_file, output_folder=output_dir, clip_geometry=geom, output_filename=cloud_file_name+".tif")
-            clip_raster(input_raster_path=provenance_output_file, output_folder=output_dir, clip_geometry=geom, output_filename=provenance_file_name+".tif")
+            clip_raster(input_raster_path=cloud_data_output_file, output_folder=output_dir, clip_geometry=geom, projection_output=projection_output, output_filename=cloud_file_name+".tif")
+            clip_raster(input_raster_path=provenance_output_file, output_folder=output_dir, clip_geometry=geom, projection_output=projection_output, output_filename=provenance_file_name+".tif")
         
         fix_baseline_number(input_folder=output_dir, input_filename=file_name, baseline_number=baseline_number)
 

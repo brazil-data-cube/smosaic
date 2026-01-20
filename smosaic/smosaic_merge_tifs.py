@@ -8,12 +8,12 @@ from shapely.ops import transform as shapely_transform
 from rasterio.merge import merge as rasterio_merge
 from rasterio.warp import calculate_default_transform, reproject, Resampling
 
-from smosaic.smosaic_utils import clean_dir, get_all_cloud_configs
+from smosaic.smosaic_utils import clean_dir, get_all_cloud_configs, get_coverage_projection
 
 
-def merge_tifs(tif_files, output_path, band, path_row=None, extent=None):
+def merge_tifs(tif_files, output_path, band, projection_output, path_row=None, extent=None):
     """
-    Merge a list of TIFF files into one mosaic, reprojecting to EPSG:4326.
+    Merge a list of TIFF files into one mosaic, reprojecting to EPSG:4326 or BDC PROJ.
     
     Parameters:
     -----------
@@ -22,7 +22,7 @@ def merge_tifs(tif_files, output_path, band, path_row=None, extent=None):
     output_path : str
         Path to save the merged output TIFF
     extent : tuple (optional)
-        Bounding box for output in format (minx, miny, maxx, maxy) in EPSG:4326.
+        Bounding box for output in format (minx, miny, maxx, maxy) in EPSG:4326 or BDC PROJ.
         If None, will use the combined extent of all input files.
     """
     
@@ -46,16 +46,24 @@ def merge_tifs(tif_files, output_path, band, path_row=None, extent=None):
 
             profile['nodata'] = nodata
 
-            proj_converter = pyproj.Transformer.from_crs(
-                src.crs, 
-                'EPSG:4326', 
-                always_xy=True
-            ).transform
-            
+            if(projection_output=='BDC'):
+                proj_bdc = get_coverage_projection()
+                proj_converter = pyproj.Transformer.from_crs(
+                    src.crs, 
+                    proj_bdc, 
+                    always_xy=True
+                ).transform
+                dst_crs = proj_bdc
+            else:
+                proj_converter = pyproj.Transformer.from_crs(
+                    src.crs, 
+                    'EPSG:'+str(projection_output), 
+                    always_xy=True
+                ).transform
+                dst_crs = 'EPSG:'+str(projection_output)
+
             reproj_bbox = shapely_transform(proj_converter, src_extent)
             bounds.append(reproj_bbox.bounds)
-            
-            dst_crs = 'EPSG:4326'
             
             dst_transform, width, height = calculate_default_transform(
                 src.crs, dst_crs, src.width, src.height, *src.bounds
@@ -113,7 +121,7 @@ def merge_tifs(tif_files, output_path, band, path_row=None, extent=None):
         "height": mosaic.shape[1],
         "width": mosaic.shape[2],
         "transform": out_trans,
-        "crs": 'EPSG:4326',
+        "crs": dst_crs,
         "nodata": nodata
     })
     

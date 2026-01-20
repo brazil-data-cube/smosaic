@@ -13,7 +13,7 @@ from smosaic.smosaic_merge_tifs import merge_tifs
 from smosaic.smosaic_utils import clean_dir, get_all_cloud_configs
 
 
-def merge_scene(sorted_data, cloud_sorted_data, scenes, collection_name, band, data_dir, start_date=None, end_date=None):
+def merge_scene(sorted_data, cloud_sorted_data, scenes, collection_name, band, data_dir, projection_output, start_date=None, end_date=None):
 
     merge_files = []
     
@@ -77,10 +77,10 @@ def merge_scene(sorted_data, cloud_sorted_data, scenes, collection_name, band, d
 
         datasets = [rasterio.open(file) for file in temp_images]  
         
-        extents = get_dataset_extents(datasets)
+        extents = get_dataset_extents(datasets, projection_output)
 
         try:
-            merge_tifs(tif_files=temp_images, output_path=output_file, band=band, path_row=scene, extent=extents)
+            merge_tifs(tif_files=temp_images, output_path=output_file, band=band, path_row=scene, extent=extents, projection_output=projection_output)
         except Exception as e:
             continue
 
@@ -97,7 +97,7 @@ def merge_scene(sorted_data, cloud_sorted_data, scenes, collection_name, band, d
 
     return dict(merge_files=merge_files)
 
-def merge_scene_provenance_cloud(sorted_data, cloud_sorted_data, scenes, collection_name, band, data_dir, start_date=None, end_date=None):
+def merge_scene_provenance_cloud(sorted_data, cloud_sorted_data, scenes, collection_name, band, data_dir, projection_output, start_date=None, end_date=None):
 
     merge_files = []
     provenance_merge_files = []
@@ -217,13 +217,13 @@ def merge_scene_provenance_cloud(sorted_data, cloud_sorted_data, scenes, collect
 
         datasets = [rasterio.open(file) for file in temp_images]  
         
-        extents = get_dataset_extents(datasets)
+        extents = get_dataset_extents(datasets, projection_output)
 
-        merge_tifs(tif_files=temp_images, output_path=output_file, band=band, path_row=scene, extent=extents)
+        merge_tifs(tif_files=temp_images, output_path=output_file, band=band, path_row=scene, extent=extents, projection_output=projection_output)
 
-        merge_tifs(tif_files=provenance_temp_images, output_path=provenance_output_file, band=band, path_row=scene, extent=extents)
+        merge_tifs(tif_files=provenance_temp_images, output_path=provenance_output_file, band=band, path_row=scene, extent=extents, projection_output=projection_output)
 
-        merge_tifs(tif_files=temp_cloud_images, output_path=cloud_output_file, band=cloud_dict[collection_name]["cloud_band"], path_row=scene, extent=extents)
+        merge_tifs(tif_files=temp_cloud_images, output_path=cloud_output_file, band=cloud_dict[collection_name]["cloud_band"], path_row=scene, extent=extents, projection_output=projection_output)
 
         merge_files.append(output_file)
         provenance_merge_files.append(provenance_output_file)
