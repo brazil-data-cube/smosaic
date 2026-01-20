@@ -285,7 +285,7 @@ def process_period(period, mosaic_method, data_dir, collection_name, bands, bbox
         merge_tifs(tif_files=ordered_lists['merge_files'], output_path=output_file, band=band, path_row=name, extent=extents)
         if (i==0):
             merge_tifs(tif_files=ordered_lists['provenance_merge_files'], output_path=provenance_output_file, band=band, path_row=name, extent=extents)
-            merge_tifs(tif_files=ordered_lists['cloud_merge_files'], output_path=cloud_data_output_file, band=band, path_row=name, extent=extents)
+            merge_tifs(tif_files=ordered_lists['cloud_merge_files'], output_path=cloud_data_output_file, band=cloud_dict[collection_name]["cloud_band"], path_row=name, extent=extents)
 
         clip_raster(input_raster_path=output_file, output_folder=output_dir, clip_geometry=geom, output_filename=file_name+".tif")
         if (i==0):

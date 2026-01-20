@@ -194,7 +194,9 @@ def merge_scene_provenance_cloud(sorted_data, cloud_sorted_data, scenes, collect
             with rasterio.open(os.path.join(data_dir, provenance_file_name), 'w', **profile) as dst:
                 dst.write(provenance)
 
-            with rasterio.open(os.path.join(data_dir, cloud_item_file_name), 'w', **cloud_profile) as dst:
+            profile['nodata'] = cloud_dict[collection_name]['no_data_value']
+
+            with rasterio.open(os.path.join(data_dir, cloud_item_file_name), 'w', **profile) as dst:
                 dst.write(masked_cloud_image, 1)
 
         temp_images = temp_images + non_clear_band

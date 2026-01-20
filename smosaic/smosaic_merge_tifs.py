@@ -105,7 +105,7 @@ def merge_tifs(tif_files, output_path, band, path_row=None, extent=None):
         src = rasterio.open(f)
         src_files_to_mosaic.append(src)
     
-    mosaic, out_trans = rasterio_merge(src_files_to_mosaic, bounds=extent, nodata=nodata)
+    mosaic, out_trans = rasterio_merge(src_files_to_mosaic, bounds=extent)
     
     out_meta = src.meta.copy()
     out_meta.update({
