@@ -104,3 +104,10 @@ def clip_from_grid(input_folder, grid):
                 
                 with rasterio.open(output_path, "w", **out_meta) as dest:
                     dest.write(out_image)
+
+    for f in uncropped_tifs:
+        try:
+            pass
+            os.remove(f)
+        except:
+            pass
