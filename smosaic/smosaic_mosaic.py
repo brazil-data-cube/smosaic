@@ -16,6 +16,7 @@ from smosaic.smosaic_filter_scenes import filter_scenes
 from smosaic.smosaic_fix_baseline_number import fix_baseline_number
 from smosaic.smosaic_generate_cog import generate_cog
 from smosaic.smosaic_get_dataset_extents import get_dataset_extents
+from smosaic.smosaic_grid_crop import clip_from_grid
 from smosaic.smosaic_merge_scene import merge_scene, merge_scene_provenance_cloud
 from smosaic.smosaic_merge_tifs import merge_tifs
 from smosaic.smosaic_reproject_tif import reproject_tif
@@ -151,10 +152,9 @@ def mosaic(name, data_dir, stac_url, collection, output_dir, start_year, start_m
         calculate_spectral_indices(input_folder=output_dir,spectral_indices=spectral_indices)
 
     if (grid_crop):
-        grid_crop(input_folder=output_dir, grid=grid, bands=bands, spectral_indices=spectral_indices)
+        clip_from_grid(input_folder=output_dir, grid=grid)
 
     clean_dir(data_dir)
-    #clean_dir(output_dir)
 
 
 def process_period(period, mosaic_method, data_dir, collection_name, bands, bbox, output_dir, duration_days, duration_months, name, geom, reference_date, projection_output):
@@ -322,10 +322,10 @@ def process_period(period, mosaic_method, data_dir, collection_name, bands, bbox
         
         fix_baseline_number(input_folder=output_dir, input_filename=file_name, baseline_number=baseline_number)
 
-        generate_cog(input_folder=output_dir, input_filename=file_name, compress='LZW')
-        if (i==0):
-            generate_cog(input_folder=output_dir, input_filename=cloud_file_name, compress='LZW')
-            generate_cog(input_folder=output_dir, input_filename=provenance_file_name, compress='LZW')
+        #generate_cog(input_folder=output_dir, input_filename=file_name, compress='LZW')
+        #if (i==0):
+        #    generate_cog(input_folder=output_dir, input_filename=cloud_file_name, compress='LZW')
+        #    generate_cog(input_folder=output_dir, input_filename=provenance_file_name, compress='LZW')
         
         reproject_tif(input_folder=output_dir, input_filename=file_name)
         if (i==0):

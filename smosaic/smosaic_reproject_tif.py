@@ -8,8 +8,8 @@ from smosaic.smosaic_utils import COVERAGE_PROJ
 
 def reproject_tif(input_folder: str, input_filename: str):
 
-    input_file = os.path.join(input_folder, f'{input_filename}_COG.tif')
-    output_file = os.path.join(input_folder, f'{input_filename}_COG.tif')
+    input_file = os.path.join(input_folder, f'{input_filename}.tif')
+    output_file = os.path.join(input_folder, f'{input_filename}.tif')
 
     with rasterio.open(input_file) as src:
         transform, width, height = calculate_default_transform(

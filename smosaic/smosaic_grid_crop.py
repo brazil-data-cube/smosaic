@@ -40,7 +40,7 @@ def get_tiles_intersecting_tif(tif_path, grid_data):
 
     return tiles
 
-def grid_crop(input_folder, grid):
+def clip_from_grid(input_folder, grid):
     
     bdc_grids_data = load_jsons("grids")
     
