@@ -23,7 +23,7 @@ from smosaic.smosaic_spectral_indices import calculate_spectral_indices
 from smosaic.smosaic_utils import add_days_to_date, add_months_to_date, clean_dir, days_between_dates, get_all_cloud_configs, load_jsons
 
 
-def mosaic(name, data_dir, stac_url, collection, output_dir, start_year, start_month, start_day, mosaic_method, bands=None, reference_date=None, duration_days=None, end_year=None, end_month=None, end_day=None, duration_months=None, geom=None, grid=None, tile_id=None, bbox=None, profile=None, projection_output=4326):
+def mosaic(name, data_dir, stac_url, collection, output_dir, start_year, start_month, start_day, mosaic_method, grid_crop=False, bands=None, reference_date=None, duration_days=None, end_year=None, end_month=None, end_day=None, duration_months=None, geom=None, grid=None, tile_id=None, bbox=None, profile=None, projection_output=4326):
     
     clean_dir(data_dir)
 
@@ -149,6 +149,9 @@ def mosaic(name, data_dir, stac_url, collection, output_dir, start_year, start_m
 
     if(len(spectral_indices)):
         calculate_spectral_indices(input_folder=output_dir,spectral_indices=spectral_indices)
+
+    if (grid_crop):
+        grid_crop(input_folder=output_dir, grid=grid, bands=bands, spectral_indices=spectral_indices)
 
     clean_dir(data_dir)
     #clean_dir(output_dir)
