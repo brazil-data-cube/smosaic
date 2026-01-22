@@ -15,15 +15,14 @@ from smosaic.smosaic_utils import clean_dir, get_all_cloud_configs
 
 def merge_scene(sorted_data, cloud_sorted_data, scenes, collection_name, band, data_dir, projection_output, start_date=None, end_date=None):
 
-    merge_files = []
+    temp_images = []
+    non_clear_band = []
     
     for scene in scenes:
 
         images =  [item['file'] for item in sorted_data if item.get("scene") == scene]
         cloud_images = [item['file'] for item in cloud_sorted_data if item.get("scene") == scene]
         
-        temp_images = []
-        non_clear_band = []
 
         for i in tqdm.tqdm(range(0, len(images)), desc=f"Processing {band} {scene}..."):
 
@@ -64,57 +63,52 @@ def merge_scene(sorted_data, cloud_sorted_data, scenes, collection_name, band, d
             profile['driver'] = 'GTiff'
             with rasterio.open(os.path.join(data_dir, file_name), 'w', **profile) as dst:
                 dst.write(masked_image)
-        
-        temp_images = temp_images + non_clear_band
+    
+    temp_images = temp_images + non_clear_band
 
-        collection_prefix = collection_name.split('-')[0]
-        start_date_str = str(start_date).replace("-", "")
-        end_date_str = str(end_date).replace("-", "")
+    collection_prefix = collection_name.split('-')[0]
+    start_date_str = str(start_date).replace("-", "")
+    end_date_str = str(end_date).replace("-", "")
 
-        base_name = f"merge_{collection_prefix}_{scene}_{band}_{start_date_str}_{end_date_str}"
+    base_name = f"merge_{collection_prefix}_{start_date_str}_{end_date_str}"
 
-        output_file = os.path.join(data_dir, f"{base_name}.tif")
+    output_file = os.path.join(data_dir, f"{base_name}.tif")
 
-        datasets = [rasterio.open(file) for file in temp_images]  
-        
-        extents = get_dataset_extents(datasets, projection_output)
+    datasets = [rasterio.open(file) for file in temp_images]  
+    
+    extents = get_dataset_extents(datasets, projection_output)
 
-        try:
-            merge_tifs(tif_files=temp_images, output_path=output_file, band=band, path_row=scene, extent=extents, projection_output=projection_output)
-        except Exception as e:
-            continue
+    try:
+        merge_tifs(tif_files=temp_images, output_path=output_file, band=band, extent=extents, projection_output=projection_output)
+    except Exception as e:
+        pass
 
-        merge_files.append(output_file)
+    for dataset in datasets:
+        dataset.close()
 
-        for dataset in datasets:
-            dataset.close()
-        date_list = [
-            filename.split("T")[0][-8:] 
-            for filename in temp_images 
-        ]
+    date_list = [
+        filename.split("T")[0][-8:] 
+        for filename in temp_images 
+    ]
 
-        clean_dir(data_dir=data_dir,scene=scene,date_list=date_list)
+    clean_dir(data_dir=data_dir, date_list=date_list)
 
-    return dict(merge_files=merge_files)
+    return dict(merge_files=[output_file])
 
 def merge_scene_provenance_cloud(sorted_data, cloud_sorted_data, scenes, collection_name, band, data_dir, projection_output, start_date=None, end_date=None):
 
-    merge_files = []
-    provenance_merge_files = []
-    cloud_merge_files = []
+    temp_images = []
+    provenance_temp_images = []
+    temp_cloud_images = []
+    non_clear_band = []
+    non_clear_prov = []
+    non_clear_clou = []
 
     for scene in scenes:
 
         images =  [item['file'] for item in sorted_data if item.get("scene") == scene]
         cloud_images = [item['file'] for item in cloud_sorted_data if item.get("scene") == scene]
     
-        temp_images = []
-        provenance_temp_images = []
-        temp_cloud_images = []
-        non_clear_band = []
-        non_clear_prov = []
-        non_clear_clou = []
- 
         for i in tqdm.tqdm(range(0, len(images)), desc=f"Processing {band} {scene}..."):
 
             image_filename = images[i].split('/')[-1].split('.')[0]
@@ -199,44 +193,40 @@ def merge_scene_provenance_cloud(sorted_data, cloud_sorted_data, scenes, collect
             with rasterio.open(os.path.join(data_dir, cloud_item_file_name), 'w', **profile) as dst:
                 dst.write(masked_cloud_image, 1)
 
-        temp_images = temp_images + non_clear_band
-        provenance_temp_images = provenance_temp_images + non_clear_prov
-        temp_cloud_images = temp_cloud_images + non_clear_clou
+    temp_images = temp_images + non_clear_band
+    provenance_temp_images = provenance_temp_images + non_clear_prov
+    temp_cloud_images = temp_cloud_images + non_clear_clou
 
-        collection_prefix = collection_name.split('-')[0]
-        start_date_str = str(start_date).replace("-", "")
-        end_date_str = str(end_date).replace("-", "")
+    collection_prefix = collection_name.split('-')[0]
+    start_date_str = str(start_date).replace("-", "")
+    end_date_str = str(end_date).replace("-", "")
 
-        base_name = f"merge_{collection_prefix}_{scene}_{band}_{start_date_str}_{end_date_str}"
-        provenance_base_name = f"provenance_merge_{collection_prefix}_{scene}_{start_date_str}_{end_date_str}"
-        cloud_base_name = f"cloud_merge_{collection_prefix}_{scene}_{start_date_str}_{end_date_str}"
+    base_name = f"merge_{collection_prefix}_{band}_{start_date_str}_{end_date_str}"
+    provenance_base_name = f"provenance_merge_{collection_prefix}_{start_date_str}_{end_date_str}"
+    cloud_base_name = f"cloud_merge_{collection_prefix}_{start_date_str}_{end_date_str}"
 
-        output_file = os.path.join(data_dir, f"{base_name}.tif")
-        provenance_output_file = os.path.join(data_dir, f"{provenance_base_name}.tif")
-        cloud_output_file = os.path.join(data_dir, f"{cloud_base_name}.tif")
+    output_file = os.path.join(data_dir, f"{base_name}.tif")
+    provenance_output_file = os.path.join(data_dir, f"{provenance_base_name}.tif")
+    cloud_output_file = os.path.join(data_dir, f"{cloud_base_name}.tif")
 
-        datasets = [rasterio.open(file) for file in temp_images]  
-        
-        extents = get_dataset_extents(datasets, projection_output)
+    datasets = [rasterio.open(file) for file in temp_images]  
+    
+    extents = get_dataset_extents(datasets, projection_output)
 
-        merge_tifs(tif_files=temp_images, output_path=output_file, band=band, path_row=scene, extent=extents, projection_output=projection_output)
+    merge_tifs(tif_files=temp_images, output_path=output_file, band=band, extent=extents, projection_output=projection_output)
 
-        merge_tifs(tif_files=provenance_temp_images, output_path=provenance_output_file, band=band, path_row=scene, extent=extents, projection_output=projection_output)
+    merge_tifs(tif_files=provenance_temp_images, output_path=provenance_output_file, band=band, extent=extents, projection_output=projection_output)
 
-        merge_tifs(tif_files=temp_cloud_images, output_path=cloud_output_file, band=cloud_dict[collection_name]["cloud_band"], path_row=scene, extent=extents, projection_output=projection_output)
+    merge_tifs(tif_files=temp_cloud_images, output_path=cloud_output_file, band=cloud_dict[collection_name]["cloud_band"], extent=extents, projection_output=projection_output)
 
-        merge_files.append(output_file)
-        provenance_merge_files.append(provenance_output_file)
-        cloud_merge_files.append(cloud_output_file)
+    for dataset in datasets:
+        dataset.close()
 
-        for dataset in datasets:
-            dataset.close()
+    date_list = [
+        filename.split("T")[0][-8:] 
+        for filename in temp_images 
+    ]
 
-        date_list = [
-            filename.split("T")[0][-8:] 
-            for filename in temp_images 
-        ]
+    clean_dir(data_dir=data_dir,date_list=date_list)
 
-        clean_dir(data_dir=data_dir,scene=scene,date_list=date_list)
-
-    return dict(merge_files=merge_files, provenance_merge_files=provenance_merge_files, cloud_merge_files=cloud_merge_files)
+    return dict(merge_files=[output_file], provenance_merge_files=[provenance_output_file], cloud_merge_files=[cloud_output_file])

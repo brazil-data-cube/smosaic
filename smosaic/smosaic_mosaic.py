@@ -152,7 +152,7 @@ def mosaic(name, data_dir, stac_url, collection, output_dir, start_year, start_m
         calculate_spectral_indices(input_folder=output_dir,spectral_indices=spectral_indices)
 
     if (grid_crop):
-        clip_from_grid(input_folder=output_dir, grid=grid)
+        clip_from_grid(input_folder=output_dir, grid=grid, tile_id=tile_id)
 
     clean_dir(data_dir)
 
@@ -210,7 +210,7 @@ def process_period(period, mosaic_method, data_dir, collection_name, bands, bbox
                     pixel_count = count_pixels(os.path.join(coll_data_dir, path, cloud_dict[collection_name]['cloud_band'], file), cloud_dict[collection_name]['non_cloud_values'][0]) #por região não total
                     cloud_list.append(dict(band=cloud, date=date.strftime("%Y%m%d"), clean_percentage=float(pixel_count['count']/pixel_count['total']), scene=path, file=''))
                     band_list.append(dict(band=bands[i], date=date.strftime("%Y%m%d"), clean_percentage=float(pixel_count['count']/pixel_count['total']), scene=path, file=''))
-       
+
         files_list = []
 
         for path in scenes:
@@ -266,7 +266,7 @@ def process_period(period, mosaic_method, data_dir, collection_name, bands, bbox
             sorted_data = sorted(band_list, key=lambda x: x['distance_days'])
 
             cloud_sorted_data = sorted(cloud_list, key=lambda x: x['distance_days'])
-        
+
         if (i==0):
             ordered_lists = merge_scene_provenance_cloud(sorted_data, cloud_sorted_data, scenes, collection_name, bands[i], data_dir, projection_output, start_date, end_date)
         else:

@@ -40,7 +40,7 @@ def get_tiles_intersecting_tif(tif_path, grid_data):
 
     return tiles
 
-def clip_from_grid(input_folder, grid):
+def clip_from_grid(input_folder, grid, tile_id):
     
     bdc_grids_data = load_jsons("grids")
     
@@ -51,8 +51,11 @@ def clip_from_grid(input_folder, grid):
     uncropped_tifs = [
         os.path.join(input_folder, f) for f in os.listdir(input_folder)
     ]
-
-    tiles = get_tiles_intersecting_tif(uncropped_tifs[0], selected_grid)
+    
+    if (tile_id):
+        tiles = [tile_id]
+    else:
+        tiles = get_tiles_intersecting_tif(uncropped_tifs[0], selected_grid)
 
     proj_bdc = get_coverage_projection()
     proj_converter = Transformer.from_crs(pyproj.CRS.from_epsg(4326), proj_bdc, always_xy=True).transform

@@ -1,3 +1,4 @@
+import numpy as np
 import rasterio
 
 
@@ -10,7 +11,7 @@ def count_pixels(raster_path, target_value):
         target_value (int/float): The pixel value to count
         
     Returns:
-        int: Count of pixels with the target value
+        dict: Dictionary with total non-zero and non-NaN pixels and count of target value pixels
     """
     
     with rasterio.open(raster_path) as src:
@@ -18,4 +19,7 @@ def count_pixels(raster_path, target_value):
         
         count = (data == target_value).sum()
         
-        return dict(total=data.size, count=count)
+        valid_mask = (data != 0) & (~np.isnan(data))
+        total_non_zero = valid_mask.sum()
+        
+        return dict(total=total_non_zero, count=count)

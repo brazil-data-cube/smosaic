@@ -198,8 +198,7 @@ def geometry_collides_with_bbox(geometry,input_bbox):
     return geometry.intersects(bbox_polygon)
 
 
-def clean_dir(data_dir, scene=None, date_list=None, date_interval=None):
-
+def clean_dir(data_dir, date_list=None, date_interval=None):
 
     if date_interval:
         
@@ -207,24 +206,23 @@ def clean_dir(data_dir, scene=None, date_list=None, date_interval=None):
 
         files_to_delete = [
             f for f in os.listdir(data_dir)
-            if re.search(pattern_date, f)
+            if re.search(pattern_date, f) and "merge_" not in f
         ]
 
         for f in files_to_delete:
             try:
-                pass
-                os.remove(f)
-            except:
+                full_path = os.path.join(data_dir, f)
+                os.remove(full_path)
+            except OSError:
                 pass
 
     elif date_list:     
         for date in date_list:
-            pattern_scene = r'_T' + re.escape(scene)
             pattern_date = re.escape(date)
 
             files_to_delete = [
                 f for f in os.listdir(data_dir)
-                if re.search(pattern_scene, f) and re.search(pattern_date, f)
+                if re.search(pattern_date, f)
             ]
 
             for f in files_to_delete:
