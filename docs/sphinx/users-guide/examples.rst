@@ -28,15 +28,15 @@ smosaic data cubes
 
 This example shows the list of collections in a service:
 
-.. literalinclude:: ../../examples/smosaic-data-cube.py
+.. literalinclude:: ../../../examples/smosaic-data-cube.py
    :language: python
-   :lines: 10-
+   :lines: 02-
 
 smosaic mosaic
 --------------
 
 This example shows the list of collections in a service:
 
-.. literalinclude:: ../../examples/smosaic-mosaic.py
+.. literalinclude:: ../../../examples/smosaic-mosaic.py
    :language: python
-   :lines: 10-
+   :lines: 02-

@@ -22,15 +22,28 @@
 SMOSAIC Documentation
 =====================
 
+User's guide
+============
+
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
 
+   users-guide/index
 
-   installation
-   cli
-   examples
-   api
+API
+===
+
+.. toctree::
+   :maxdepth: 2
+
+   api/index
+
+Project
+=======
+
+.. toctree::
+   :maxdepth: 1
+
    repository
    history
    license

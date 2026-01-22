@@ -3,13 +3,37 @@ conda create -n smosaic python=3.11 -y
 conda activate smosaic
 
 # Install the packages
-conda install -c conda-forge numpy=2.3.4 -y
-conda install -c conda-forge gdal -y
-conda install -c conda-forge tqdm=4.67.1 -y
-conda install -c conda-forge pyproj=3.7.2 -y
-conda install -c conda-forge shapely=2.1.2 -y
-conda install -c conda-forge requests=2.32.5 -y
-conda install -c conda-forge rasterio=1.4.3 -y
-conda install -c conda-forge pystac-client=0.9.0 -y
-conda install -c conda-forge build -y
+conda install -c conda-forge \
+  numpy=2.3.4 \
+  gdal \
+  pyproj=3.7.2 \
+  shapely=2.1.2 \
+  rasterio=1.4.3 \
+  tqdm=4.67.1 \
+  requests=2.32.5 \
+  pystac-client=0.9.0 \
+  sphinx=8.2.3 \
+  sphinx-rtd-theme=3.0.2 \
+  docutils=0.21.2 \
+  pygments=2.19.2 \
+  jinja2=3.1.6 \
+  babel=2.17.0 \
+  certifi=2026.1.4 \
+  charset-normalizer=3.4.4 \
+  idna=3.11 \
+  imagesize=1.4.1 \
+  packaging=25.0 \
+  snowballstemmer=3.0.1 \
+  urllib3=2.6.3 \
+  build \
+  -y
 
+
+pip install \
+  myst-parser>=4.0.0,<4.1 \
+  sphinx-copybutton>=0.5.2,<1.0.0 \
+  sphinx-design>=0.6.1,<0.7 \
+  sphinx-colorschemed-images>=0.2.0 \
+  sphinx-nefertiti==0.9.1 \
+  roman-numerals==4.1.0 \
+  roman-numerals-py==4.1.0
