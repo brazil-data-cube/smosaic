@@ -71,7 +71,6 @@ Changes
 * **New Notebook**: Added example notebook:
     * ``smosaic-closest-to-date.ipynb``: A complete example of creating Sentinel-2 image mosaic by selecting images closest to a reference date
 
-
 0.3.0 (2025-10-31)
 ------------------
 
@@ -83,18 +82,15 @@ Changes
 * **New Notebook**: Added example notebook:
     * ``smosaic-monitoring-expansion-favelas-sp.ipynb``: A complete example of creating monthly Sentinel-2 image mosaics for monitoring the expansion of favelas in São Paulo.
 
-
 0.2.5 (2025-10-18)
 ------------------
 
 * **Fix**: Resolved an import error with `numpy`, `pyproj`, `shapely`, `requests`, `rasterio` and `pystac-client` modules.
 
-
 0.2.2 (2025-10-15)
 ------------------
 
 * **Fix**: Fixed a bug in the ``mosaic`` function, now it generates both single-date mosaics and data cubes correctly.
-
 
 0.2.0 (2025-10-10)
 ------------------
@@ -106,13 +102,13 @@ Changes
     * ``smosaic-data-cube.ipynb``: A complete example of creating a Sentinel-2 10 days data cube for a given bbox.
 * **Data Cube Support**:  Added support for data cube generation using ``end_year``, ``end_month``, ``end_day`` and ``duration_days`` parameters.
 * **Refactor filter_scenes Function**: Completely refactored ``filter_scenes`` function now use the grid geometry instead of the colleciton.json file.
-- **Implemented parallel processing**: to significantly speed up mosaic generation by processing multiple time steps concurrently.✨
-
+* **Implemented parallel processing**: to significantly speed up mosaic generation by processing multiple time steps concurrently.✨
 
 Version 0.0.1 (2025-06-04)
-------------------
+--------------------------
 
 * **Initial Release**: First implementation of ``mosaic`` function, with ``collection_get_data``, ``get_dataset_extents``, ``merge_tifs`` and ``clip_raster`` functions.
 * Completed the smosaic exemple notebook.
 * **Sentinel 2**: Added full support for Sentinel 2 data.  🛰️
-* **COG Support**: Added output as Cloud Optimized GeoTIFFs (COGs) with RasterIO. 
+* **COG Support**: Added output as Cloud Optimized GeoTIFFs (COGs) with RasterIO.
+

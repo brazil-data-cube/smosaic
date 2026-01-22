@@ -27,7 +27,7 @@ Development Installation
 
 Clone the Software Repository::
 
-    git clone git@github.com:GSansigolo/smosaic.git
+    git clone git@github.com:brazil-data-cube/smosaic.git
 
 
 Go to the source code folder::
@@ -68,4 +68,17 @@ WIP
 Build the Documentation
 +++++++++++++++++++++++
 
-WIP
+You can generate the documentation based on Sphinx with the following command::
+
+    sphinx-build docs/sphinx docs/sphinx/_build/html
+
+
+The above command will generate the documentation in HTML and it will place it under::
+
+    docs/sphinx/_build/html/
+
+
+You can open the above documentation in your favorite browser, as::
+
+    firefox docs/sphinx/_build/html/index.html
+
