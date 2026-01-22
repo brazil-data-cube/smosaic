@@ -91,7 +91,7 @@ def merge_scene(sorted_data, cloud_sorted_data, scenes, collection_name, band, d
         for filename in temp_images 
     ]
 
-    clean_dir(data_dir=data_dir, date_list=date_list)
+    clean_dir(data_dir=data_dir,date_list=date_list)
 
     return dict(merge_files=[output_file])
 

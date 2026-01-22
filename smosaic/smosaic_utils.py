@@ -222,7 +222,7 @@ def clean_dir(data_dir, date_list=None, date_interval=None):
 
             files_to_delete = [
                 f for f in os.listdir(data_dir)
-                if re.search(pattern_date, f)
+                if re.search(pattern_date, f) and "merge_" not in f
             ]
 
             for f in files_to_delete:
