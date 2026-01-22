@@ -80,8 +80,8 @@ html_theme_options = {
     "monospace_font": "Fira Code",
     "project_name_font": "Nunito",
     "doc_headers_font": "Georgia",
-    "documentation_font_size": "1.2rem",
-    "monospace_font_size": "1.1rem",
+    "documentation_font_size": "1.3rem",
+    "monospace_font_size": "1.2rem",
     "style": "blue",
     "pygments_light_style": "pastie",
     "pygments_dark_style": "dracula",
@@ -113,8 +113,8 @@ html_theme_options = {
         },
     ],
     "logo": "logo-bdc.svg",
-    "logo_width": 60,
-    "logo_height": 60,
+    "logo_width": 65,
+    "logo_height": 65,
     "logo_alt": "BDC/INPE",
     "footer_links": [
         {
