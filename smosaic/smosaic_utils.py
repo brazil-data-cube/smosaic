@@ -244,3 +244,23 @@ def clean_dir(data_dir, date_list=None, date_interval=None):
                 os.remove(f)
             except:
                 pass
+
+
+def create_composition_json(output_dir, collection, input_scenes, ignored_scenes, used_scenes):
+    """Create composition.json file with optional custom data"""
+    
+    data = {
+        "collection": collection,
+        "input_scenes": input_scenes,
+        "ignored_scenes": ignored_scenes,
+        "used_scenes": used_scenes
+    }
+    
+    os.makedirs(output_dir, exist_ok=True)
+    
+    output_path = os.path.join(output_dir, "composition.json")
+    
+    with open(output_path, 'w') as f:
+        json.dump(data, f, indent=2)
+    
+    return output_path
