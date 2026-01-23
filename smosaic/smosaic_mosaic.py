@@ -274,7 +274,9 @@ def process_period(period, mosaic_method, data_dir, collection_name, bands, bbox
             cloud_sorted_data = sorted(cloud_list, key=lambda x: x['distance_days'])
         
         ordered_lists = merge_scene_provenance_cloud(sorted_data, cloud_sorted_data, scenes, collection_name, bands[i], data_dir, projection_output, start_date, end_date)
+        
         break
+    
         if (i==0):
             ordered_lists = merge_scene_provenance_cloud(sorted_data, cloud_sorted_data, scenes, collection_name, bands[i], data_dir, projection_output, start_date, end_date)
         else:
