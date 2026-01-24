@@ -209,11 +209,11 @@ def process_period(period, mosaic_method, data_dir, collection_name, bands, bbox
                 date = datetime.datetime.strptime(date_str, "%Y%m%d")
                 if (reference_date):
                     distance_days = days_between_dates(reference_date, file.split("_")[2].split('T')[0])
-                    pixel_count = count_pixels(os.path.join(coll_data_dir, path, cloud_dict[collection_name]['cloud_band'], file), cloud_dict[collection_name]['non_cloud_values']) #por região não total
+                    pixel_count = count_pixels(os.path.join(coll_data_dir, path, cloud_dict[collection_name]['cloud_band'], file), cloud_dict[collection_name]['non_cloud_values'], geom) 
                     cloud_list.append(dict(band=cloud, date=date.strftime("%Y%m%d"), distance_days=distance_days, clean_percentage=float(pixel_count['count']/pixel_count['total']), scene=path, file='')) 
                     band_list.append(dict(band=bands[i], date=date.strftime("%Y%m%d"), distance_days=distance_days, clean_percentage=float(pixel_count['count']/pixel_count['total']), scene=path, file=''))
                 else:
-                    pixel_count = count_pixels(os.path.join(coll_data_dir, path, cloud_dict[collection_name]['cloud_band'], file), cloud_dict[collection_name]['non_cloud_values']) #por região não total
+                    pixel_count = count_pixels(os.path.join(coll_data_dir, path, cloud_dict[collection_name]['cloud_band'], file), cloud_dict[collection_name]['non_cloud_values'], geom)
                     cloud_list.append(dict(band=cloud, date=date.strftime("%Y%m%d"), clean_percentage=float(pixel_count['count']/pixel_count['total']), scene=path, file=''))
                     band_list.append(dict(band=bands[i], date=date.strftime("%Y%m%d"), clean_percentage=float(pixel_count['count']/pixel_count['total']), scene=path, file=''))
 
@@ -272,15 +272,11 @@ def process_period(period, mosaic_method, data_dir, collection_name, bands, bbox
             sorted_data = sorted(band_list, key=lambda x: x['distance_days'])
 
             cloud_sorted_data = sorted(cloud_list, key=lambda x: x['distance_days'])
-        
-        ordered_lists = merge_scene_provenance_cloud(sorted_data, cloud_sorted_data, scenes, collection_name, bands[i], data_dir, projection_output, start_date, end_date)
-        
-        break
-    
+
         if (i==0):
-            ordered_lists = merge_scene_provenance_cloud(sorted_data, cloud_sorted_data, scenes, collection_name, bands[i], data_dir, projection_output, start_date, end_date)
+            ordered_lists = merge_scene_provenance_cloud(sorted_data, cloud_sorted_data, scenes, collection_name, bands[i], data_dir, start_date, end_date)
         else:
-            ordered_lists = merge_scene(sorted_data, cloud_sorted_data, scenes, collection_name, bands[i], data_dir, projection_output, start_date, end_date,)
+            ordered_lists = merge_scene(sorted_data, cloud_sorted_data, scenes, collection_name, bands[i], data_dir, start_date, end_date,)
 
         filename = sorted_data[0]['file'].split('/')[-1]
         if (collection_name =='S2_L2A-1'):

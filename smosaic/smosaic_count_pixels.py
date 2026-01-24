@@ -1,27 +1,62 @@
-import numpy as np
 import rasterio
+from rasterio.mask import mask
+import numpy as np
+import shapely.geometry
+from shapely.ops import transform
+from pyproj import CRS, Transformer
 
+from smosaic.smosaic_utils import get_coverage_projection
 
-def count_pixels(raster_path, target_values):
+import rasterio
+from rasterio.mask import mask
+import numpy as np
+from shapely.ops import transform
+from pyproj import CRS, Transformer
+
+def count_pixels(raster_path, target_values, geom):
     """
-    Counts the number of pixels in a raster that match specific values.
+    Counts pixels matching target_values within the intersection of the raster and a geometry.
     
     Args:
-        raster_path (str): Path to the raster file
-        target_values (list): List of pixel values to count
+        raster_path (str): Path to the raster file.
+        target_values (list): List of pixel values to count.
+        geom (shapely.geometry): Geometry object (e.g., Polygon) in EPSG:4326 (Lat/Lon).
         
     Returns:
-        dict: Dictionary with total non-zero and non-NaN pixels and count of target values pixels
+        dict: 
+            'total': Total count of valid pixels inside the geometry (including 0s).
+            'count': Count of pixels matching target_values inside the geometry.
     """
     
     with rasterio.open(raster_path) as src:
-        data = src.read(1)
+
+        if src.crs and src.crs.to_epsg() != 4326:
+            project = Transformer.from_crs(
+                CRS.from_epsg(4326), 
+                src.crs, 
+                always_xy=True
+            ).transform
+            geom_transformed = transform(project, geom)
+        else:
+            geom_transformed = geom
+
+        out_image, out_transform = mask(
+            src, 
+            [geom_transformed], 
+            crop=True, 
+            nodata=src.nodata
+        )
         
-        # Create a mask for any of the target values
-        mask = np.isin(data, target_values)
-        count = mask.sum()
+        data = out_image[0] 
+
+        if src.nodata is not None:
+            is_inside_geom = (data != src.nodata) & (~np.isnan(data))
+        else:
+            is_inside_geom = ~np.isnan(data)
+
+        target_mask = np.isin(data, target_values) & is_inside_geom
+        count = target_mask.sum()
         
-        valid_mask = (data != 0) & (~np.isnan(data))
-        total_non_zero = valid_mask.sum()
+        total_valid_pixels = is_inside_geom.sum()
         
-        return dict(total=total_non_zero, count=count)
+        return dict(total=int(total_valid_pixels), count=int(count))
