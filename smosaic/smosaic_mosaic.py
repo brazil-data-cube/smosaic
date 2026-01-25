@@ -148,8 +148,6 @@ def mosaic(name, data_dir, stac_url, collection, output_dir, start_year, start_m
     with multiprocessing.Pool(processes=num_processes) as pool:
         results = pool.starmap(process_period, args_for_processes)
 
-    return 0 
-
     if(len(spectral_indices)):
         calculate_spectral_indices(input_folder=output_dir,spectral_indices=spectral_indices)
 
