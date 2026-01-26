@@ -38,7 +38,10 @@ def merge_tifs(tif_files, output_path, band, projection_output, path_row=None, e
         nodata = 0 
 
     for tif in tif_files:
+        
         with rasterio.open(tif) as src:
+
+            print(np.unique(src.read())) 
 
             profile = src.profile  
             left, bottom, right, top = src.bounds
