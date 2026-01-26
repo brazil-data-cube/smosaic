@@ -41,7 +41,8 @@ def merge_tifs(tif_files, output_path, band, projection_output, path_row=None, e
         
         with rasterio.open(tif) as src:
 
-            print(np.unique(src.read())) 
+            if(tif.split('/')[-1].split('.')[0]['_'][0] == "provenance"):
+                print(np.unique(src.read())) 
 
             profile = src.profile  
             left, bottom, right, top = src.bounds
