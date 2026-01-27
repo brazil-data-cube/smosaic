@@ -239,6 +239,7 @@ def merge_scene_provenance_cloud(sorted_data, cloud_sorted_data, scenes, collect
 
             with rasterio.open(images[i]) as src:
                 image_data = src.read()  
+                profile = src.profile
                 height, width = src.shape 
 
             with rasterio.open(cloud_images[i]) as mask_src:
@@ -362,6 +363,6 @@ def merge_scene_provenance_cloud(sorted_data, cloud_sorted_data, scenes, collect
         for filename in temp_images 
     ]
 
-    clean_dir(data_dir=data_dir,date_list=date_list)
+    #clean_dir(data_dir=data_dir,date_list=date_list)
 
     return dict(merge_files=merge_files, provenance_merge_files=provenance_merge_files, cloud_merge_files=cloud_merge_files)

@@ -148,15 +148,15 @@ def mosaic(name, data_dir, stac_url, collection, output_dir, start_year, start_m
     with multiprocessing.Pool(processes=num_processes) as pool:
         results = pool.starmap(process_period, args_for_processes)
 
-    if(len(spectral_indices)):
-        calculate_spectral_indices(input_folder=output_dir,spectral_indices=spectral_indices)
+    #if(len(spectral_indices)):
+    #    calculate_spectral_indices(input_folder=output_dir,spectral_indices=spectral_indices)
 
-    if (grid_crop):
-        clip_from_grid(input_folder=output_dir, grid=grid, tile_id=tile_id)
+    #if (grid_crop):
+    #    clip_from_grid(input_folder=output_dir, grid=grid, tile_id=tile_id)
 
-    scenes = filter_scenes(collection_name, data_dir, geom)
+    #scenes = filter_scenes(collection_name, data_dir, geom)
 
-    create_composition_json(output_dir=output_dir, collection=collection, input_scenes=scenes, ignored_scenes=[], used_scenes=[])
+    #create_composition_json(output_dir=output_dir, collection=collection, input_scenes=scenes, ignored_scenes=[], used_scenes=[])
 
     clean_dir(data_dir)
 
@@ -270,7 +270,7 @@ def process_period(period, mosaic_method, data_dir, collection_name, bands, bbox
             sorted_data = sorted(band_list, key=lambda x: x['distance_days'])
 
             cloud_sorted_data = sorted(cloud_list, key=lambda x: x['distance_days'])
-
+        
         if (i==0):
             ordered_lists = merge_scene_provenance_cloud(sorted_data, cloud_sorted_data, scenes, collection_name, bands[i], data_dir, start_date, end_date)
         else:
@@ -311,28 +311,28 @@ def process_period(period, mosaic_method, data_dir, collection_name, bands, bbox
         
         datasets = [rasterio.open(file) for file in  ordered_lists['merge_files']]        
         
-        extents = get_dataset_extents(datasets, projection_output)
+        extents = get_dataset_extents(datasets)
 
-        merge_tifs(tif_files=ordered_lists['merge_files'], output_path=output_file, band=band, path_row=name, extent=extents, projection_output=projection_output)
+        merge_tifs(tif_files=ordered_lists['merge_files'], output_path=output_file, band=band, path_row=name, extent=extents)
         if (i==0):
-            merge_tifs(tif_files=ordered_lists['provenance_merge_files'], output_path=provenance_output_file, band=band, path_row=name, extent=extents, projection_output=projection_output)
-            merge_tifs(tif_files=ordered_lists['cloud_merge_files'], output_path=cloud_data_output_file, band=cloud_dict[collection_name]["cloud_band"], path_row=name, extent=extents, projection_output=projection_output)
+            merge_tifs(tif_files=ordered_lists['provenance_merge_files'], output_path=provenance_output_file, band=band, path_row=name, extent=extents)
+            merge_tifs(tif_files=ordered_lists['cloud_merge_files'], output_path=cloud_data_output_file, band=cloud_dict[collection_name]["cloud_band"], path_row=name, extent=extents)
 
-        clip_raster(input_raster_path=output_file, output_folder=output_dir, clip_geometry=geom, projection_output=projection_output, output_filename=file_name+".tif")
+        clip_raster(input_raster_path=output_file, output_folder=output_dir, clip_geometry=geom, output_filename=file_name+".tif")
         if (i==0):
-            clip_raster(input_raster_path=cloud_data_output_file, output_folder=output_dir, clip_geometry=geom, projection_output=projection_output, output_filename=cloud_file_name+".tif")
-            clip_raster(input_raster_path=provenance_output_file, output_folder=output_dir, clip_geometry=geom, projection_output=projection_output, output_filename=provenance_file_name+".tif")
+            clip_raster(input_raster_path=cloud_data_output_file, output_folder=output_dir, clip_geometry=geom, output_filename=cloud_file_name+".tif")
+            clip_raster(input_raster_path=provenance_output_file, output_folder=output_dir, clip_geometry=geom, output_filename=provenance_file_name+".tif")
         
         fix_baseline_number(input_folder=output_dir, input_filename=file_name, baseline_number=baseline_number)
 
-        #generate_cog(input_folder=output_dir, input_filename=file_name, compress='LZW')
-        #if (i==0):
-        #    generate_cog(input_folder=output_dir, input_filename=cloud_file_name, compress='LZW')
-        #    generate_cog(input_folder=output_dir, input_filename=provenance_file_name, compress='LZW')
-        
-        reproject_tif(input_folder=output_dir, input_filename=file_name)
+        reproject_tif(input_folder=output_dir, input_filename=file_name, projection_output=projection_output)
         if (i==0):
-            reproject_tif(input_folder=output_dir, input_filename=cloud_file_name)
-            reproject_tif(input_folder=output_dir, input_filename=provenance_file_name)
+            reproject_tif(input_folder=output_dir, input_filename=cloud_file_name, projection_output=projection_output)
+            reproject_tif(input_folder=output_dir, input_filename=provenance_file_name, projection_output=projection_output)
+        
+        generate_cog(input_folder=output_dir, input_filename=file_name, compress='DEFLATE')
+        if (i==0):
+            generate_cog(input_folder=output_dir, input_filename=cloud_file_name, compress='DEFLATE')
+            generate_cog(input_folder=output_dir, input_filename=provenance_file_name, compress='DEFLATE')
         
         clean_dir(data_dir=data_dir,date_interval=str("-"+str(start_date).replace("-", "")+'_'+str(end_date).replace("-", "")))
