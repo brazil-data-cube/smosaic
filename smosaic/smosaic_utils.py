@@ -116,6 +116,9 @@ def open_geojson(file_path):
 
 
 def load_jsons(cut_grid):
+    if (cut_grid == "BDC_SM_V2"):
+        grid_json_path = importlib.resources.files("smosaic.config") / "BDC_SM_V2.json"
+        return json.loads(grid_json_path.read_text(encoding="utf-8"))
     if (cut_grid == "grids"):
         grid_json_path = importlib.resources.files("smosaic.config") / "grids.json"
         return json.loads(grid_json_path.read_text(encoding="utf-8"))
@@ -216,8 +219,9 @@ def clean_dir(data_dir, date_list=None, date_interval=None):
             except OSError:
                 pass
 
-    elif date_list:     
+    elif date_list:
         for date in date_list:
+
             pattern_date = re.escape(date)
 
             files_to_delete = [

@@ -25,7 +25,6 @@ def merge_scene(sorted_data, cloud_sorted_data, scenes, collection_name, band, d
         profile = src.profile
 
     non_clear_band = []
-
     for i in tqdm.tqdm(range(0, len(images)), desc=f"Processing {band}..."):
 
         image_filename = images[i].split('/')[-1].split('.')[0]
@@ -51,6 +50,8 @@ def merge_scene(sorted_data, cloud_sorted_data, scenes, collection_name, band, d
         masked_image = np.full_like(image_data, profile['nodata'])
         masked_image[:, clear_mask] = image_data[:, clear_mask]  
 
+        image_filename = images[i].split('/')[-1].split('.')[0]
+
         file_name = 'clear_' + image_filename + '.tif'
         temp_images.append(os.path.join(data_dir, file_name))
 
@@ -58,6 +59,8 @@ def merge_scene(sorted_data, cloud_sorted_data, scenes, collection_name, band, d
 
         with rasterio.open(os.path.join(data_dir, file_name), 'w', **profile) as dst:
             dst.write(masked_image)
+
+        profile['nodata'] = cloud_dict[collection_name]['no_data_value']
 
     for scene in scenes:
         
@@ -69,6 +72,7 @@ def merge_scene(sorted_data, cloud_sorted_data, scenes, collection_name, band, d
 
             with rasterio.open(images[i]) as src:
                 image_data = src.read()  
+                profile = src.profile
                 height, width = src.shape 
             
             non_clear_band_file_name = f"band_non_clear_{image_filename}.tif"
@@ -101,6 +105,7 @@ def merge_scene(sorted_data, cloud_sorted_data, scenes, collection_name, band, d
 
             with rasterio.open(filtered_temp_images[i]) as src:
                 img = src.read()
+                profile = src.profile
 
             if nodata_value is None or not isinstance(nodata_value, (int, float, np.number)):
                 img_valid = np.ones_like(img, dtype=bool)
@@ -363,6 +368,6 @@ def merge_scene_provenance_cloud(sorted_data, cloud_sorted_data, scenes, collect
         for filename in temp_images 
     ]
 
-    #clean_dir(data_dir=data_dir,date_list=date_list)
+    clean_dir(data_dir=data_dir,date_list=date_list)
 
     return dict(merge_files=merge_files, provenance_merge_files=provenance_merge_files, cloud_merge_files=cloud_merge_files)

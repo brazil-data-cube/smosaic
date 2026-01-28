@@ -19,7 +19,7 @@ from smosaic.smosaic_get_dataset_extents import get_dataset_extents
 from smosaic.smosaic_grid_crop import clip_from_grid
 from smosaic.smosaic_merge_scene import merge_scene, merge_scene_provenance_cloud
 from smosaic.smosaic_merge_tifs import merge_tifs
-from smosaic.smosaic_reproject_tif import reproject_tif
+from smosaic.smosaic_reproject_tif import reproject_tifs
 from smosaic.smosaic_spectral_indices import calculate_spectral_indices
 from smosaic.smosaic_utils import add_days_to_date, add_months_to_date, clean_dir, create_composition_json, days_between_dates, get_all_cloud_configs, load_jsons
 
@@ -139,7 +139,7 @@ def mosaic(name, data_dir, stac_url, collection, output_dir, start_year, start_m
 
     args_for_processes = [
         (period, mosaic_method, data_dir, collection_name, bands, bbox, output_dir, 
-         duration_days, duration_months, name, geom, reference_date, projection_output) 
+         duration_days, duration_months, name, geom, reference_date, projection_output, grid, tile_id) 
         for period in periods
     ]
 
@@ -148,20 +148,19 @@ def mosaic(name, data_dir, stac_url, collection, output_dir, start_year, start_m
     with multiprocessing.Pool(processes=num_processes) as pool:
         results = pool.starmap(process_period, args_for_processes)
 
-    #if(len(spectral_indices)):
-    #    calculate_spectral_indices(input_folder=output_dir,spectral_indices=spectral_indices)
+    if(len(spectral_indices)):
+        calculate_spectral_indices(input_folder=output_dir,spectral_indices=spectral_indices)
 
-    #if (grid_crop):
-    #    clip_from_grid(input_folder=output_dir, grid=grid, tile_id=tile_id)
-
-    #scenes = filter_scenes(collection_name, data_dir, geom)
+    if (grid_crop and not tile_id):
+        clip_from_grid(input_folder=output_dir, grid=grid, tile_id=tile_id)
 
     #create_composition_json(output_dir=output_dir, collection=collection, input_scenes=scenes, ignored_scenes=[], used_scenes=[])
 
     clean_dir(data_dir)
+    clean_dir(output_dir)
 
 
-def process_period(period, mosaic_method, data_dir, collection_name, bands, bbox, output_dir, duration_days, duration_months, name, geom, reference_date, projection_output):
+def process_period(period, mosaic_method, data_dir, collection_name, bands, bbox, output_dir, duration_days, duration_months, name, geom, reference_date, projection_output, grid, tile_id):
 
     start_date = period['start']
     end_date = period['end']
@@ -271,6 +270,10 @@ def process_period(period, mosaic_method, data_dir, collection_name, bands, bbox
 
             cloud_sorted_data = sorted(cloud_list, key=lambda x: x['distance_days'])
         
+        reproject_data = reproject_tifs(sorted_data=sorted_data, cloud_sorted_data=cloud_sorted_data, data_dir=data_dir, projection_output=projection_output)
+        sorted_data = reproject_data['reprojected_images']
+        cloud_sorted_data = reproject_data['reprojected_cloud_images']
+    
         if (i==0):
             ordered_lists = merge_scene_provenance_cloud(sorted_data, cloud_sorted_data, scenes, collection_name, bands[i], data_dir, start_date, end_date)
         else:
@@ -317,19 +320,14 @@ def process_period(period, mosaic_method, data_dir, collection_name, bands, bbox
         if (i==0):
             merge_tifs(tif_files=ordered_lists['provenance_merge_files'], output_path=provenance_output_file, band=band, path_row=name, extent=extents)
             merge_tifs(tif_files=ordered_lists['cloud_merge_files'], output_path=cloud_data_output_file, band=cloud_dict[collection_name]["cloud_band"], path_row=name, extent=extents)
-
-        clip_raster(input_raster_path=output_file, output_folder=output_dir, clip_geometry=geom, output_filename=file_name+".tif")
+        
+        clip_raster(input_raster_path=output_file, output_folder=output_dir, clip_geometry=geom, projection_output=projection_output, output_filename=file_name+".tif", grid=grid, tile_id=tile_id)
         if (i==0):
-            clip_raster(input_raster_path=cloud_data_output_file, output_folder=output_dir, clip_geometry=geom, output_filename=cloud_file_name+".tif")
-            clip_raster(input_raster_path=provenance_output_file, output_folder=output_dir, clip_geometry=geom, output_filename=provenance_file_name+".tif")
+            clip_raster(input_raster_path=cloud_data_output_file, output_folder=output_dir, clip_geometry=geom,projection_output=projection_output, output_filename=cloud_file_name+".tif", grid=grid, tile_id=tile_id)
+            clip_raster(input_raster_path=provenance_output_file, output_folder=output_dir, clip_geometry=geom, projection_output=projection_output, output_filename=provenance_file_name+".tif", grid=grid, tile_id=tile_id)
         
         fix_baseline_number(input_folder=output_dir, input_filename=file_name, baseline_number=baseline_number)
 
-        reproject_tif(input_folder=output_dir, input_filename=file_name, projection_output=projection_output)
-        if (i==0):
-            reproject_tif(input_folder=output_dir, input_filename=cloud_file_name, projection_output=projection_output)
-            reproject_tif(input_folder=output_dir, input_filename=provenance_file_name, projection_output=projection_output)
-        
         generate_cog(input_folder=output_dir, input_filename=file_name, compress='DEFLATE')
         if (i==0):
             generate_cog(input_folder=output_dir, input_filename=cloud_file_name, compress='DEFLATE')

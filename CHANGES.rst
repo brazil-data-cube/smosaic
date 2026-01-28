@@ -19,7 +19,7 @@
 Changes
 =======
 
-0.7.0 (2026-01-19)
+0.7.0 (2026-01-05)
 ------------------
 
 * **Cloud Mask Handling**: Resolved a bug in the ``merge_tifs()`` function to properly handle "No Data" values in the output cloud mask, ensuring seamless mosaic mask generation.
@@ -27,6 +27,8 @@ Changes
 * **Automated Grid Cropping**: Added an optional ``grid_crop`` parameter; when enabled, the final result is automatically clipped to the specific geometry of the input grid tile.
 * **Filter_scenes Function**: Redesigned the ``filter_scenes`` function now use the geometry of grid or bbox to filter the downloaded images for scenes that intersect mosaic region.
 * **Mosaic Generation Algorithm Refactor**: Completely refactored the ``merge_scene()`` function, implementing a new merging logic based on NumPy arrays and binary mask filling to improve mosaic composition.
+* **New Example Notebook**: Added experimental Jupyter notebooks for function demonstrations:
+  - ``smosaic-bdc-tile``: Example of creating RGB mosaics  on the BDC_SM_V2 grid for a tile in Mato Grosso state
 
 0.6.0 (2025-12-22)
 ------------------
