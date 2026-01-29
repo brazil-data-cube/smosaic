@@ -157,7 +157,7 @@ def mosaic(name, data_dir, stac_url, collection, output_dir, start_year, start_m
     #create_composition_json(output_dir=output_dir, collection=collection, input_scenes=scenes, ignored_scenes=[], used_scenes=[])
 
     clean_dir(data_dir)
-    clean_dir(output_dir)
+    #clean_dir(output_dir)
 
 
 def process_period(period, mosaic_method, data_dir, collection_name, bands, bbox, output_dir, duration_days, duration_months, name, geom, reference_date, projection_output, grid, tile_id):
@@ -245,7 +245,6 @@ def process_period(period, mosaic_method, data_dir, collection_name, bands, bbox
             cloud_lookup[(date, scene)] = path
             band_lookup[(band, date, scene)] = path
 
-
         for item in band_list:
             item['file'] = band_lookup.get((item['band'], item['date'], item['scene']), '')
 
@@ -269,11 +268,11 @@ def process_period(period, mosaic_method, data_dir, collection_name, bands, bbox
             sorted_data = sorted(band_list, key=lambda x: x['distance_days'])
 
             cloud_sorted_data = sorted(cloud_list, key=lambda x: x['distance_days'])
-        
+
         reproject_data = reproject_tifs(sorted_data=sorted_data, cloud_sorted_data=cloud_sorted_data, data_dir=data_dir, projection_output=projection_output)
         sorted_data = reproject_data['reprojected_images']
         cloud_sorted_data = reproject_data['reprojected_cloud_images']
-    
+
         if (i==0):
             ordered_lists = merge_scene_provenance_cloud(sorted_data, cloud_sorted_data, scenes, collection_name, bands[i], data_dir, start_date, end_date)
         else:
