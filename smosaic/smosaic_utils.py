@@ -25,7 +25,7 @@ CLOUD_CONFIG = {
     'S2_L1C_BUNDLE-1': {
         'cloud_band': 'FMASK',
         'non_cloud_values': [0, 1],
-        'cloud_values': [2, 3, 4],
+        'cloud_values': [2, 3, 4, 255],
         'no_data_value': 255
     }
 }
@@ -116,6 +116,9 @@ def open_geojson(file_path):
 
 
 def load_jsons(cut_grid):
+    if (cut_grid == "BDC_SM_V2"):
+        grid_json_path = importlib.resources.files("smosaic.config") / "BDC_SM_V2.json"
+        return json.loads(grid_json_path.read_text(encoding="utf-8"))
     if (cut_grid == "grids"):
         grid_json_path = importlib.resources.files("smosaic.config") / "grids.json"
         return json.loads(grid_json_path.read_text(encoding="utf-8"))
@@ -198,8 +201,7 @@ def geometry_collides_with_bbox(geometry,input_bbox):
     return geometry.intersects(bbox_polygon)
 
 
-def clean_dir(data_dir, scene=None, date_list=None, date_interval=None):
-
+def clean_dir(data_dir, date_list=None, date_interval=None):
 
     if date_interval:
         
@@ -207,24 +209,24 @@ def clean_dir(data_dir, scene=None, date_list=None, date_interval=None):
 
         files_to_delete = [
             f for f in os.listdir(data_dir)
-            if re.search(pattern_date, f)
+            if re.search(pattern_date, f) and "merge_" not in f
         ]
 
         for f in files_to_delete:
             try:
-                pass
-                os.remove(f)
-            except:
+                full_path = os.path.join(data_dir, f)
+                os.remove(full_path)
+            except OSError:
                 pass
 
-    elif date_list:     
+    elif date_list:
         for date in date_list:
-            pattern_scene = r'_T' + re.escape(scene)
+
             pattern_date = re.escape(date)
 
             files_to_delete = [
                 f for f in os.listdir(data_dir)
-                if re.search(pattern_scene, f) and re.search(pattern_date, f)
+                if re.search(pattern_date, f) and "merge_" not in f
             ]
 
             for f in files_to_delete:
@@ -246,3 +248,23 @@ def clean_dir(data_dir, scene=None, date_list=None, date_interval=None):
                 os.remove(f)
             except:
                 pass
+
+
+def create_composition_json(output_dir, collection, input_scenes, ignored_scenes, used_scenes):
+    """Create composition.json file with optional custom data"""
+    
+    data = {
+        "collection": collection,
+        "input_scenes": input_scenes,
+        "ignored_scenes": ignored_scenes,
+        "used_scenes": used_scenes
+    }
+    
+    os.makedirs(output_dir, exist_ok=True)
+    
+    output_path = os.path.join(output_dir, "composition.json")
+    
+    with open(output_path, 'w') as f:
+        json.dump(data, f, indent=2)
+    
+    return output_path

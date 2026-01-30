@@ -17,6 +17,7 @@ def generate_cog(input_folder: str, input_filename: str, compress: str = 'LZW') 
             format='COG',
             creationOptions=[
                 f'COMPRESS={compress}',
+                'BLOCKSIZE=256',
                 'BIGTIFF=IF_SAFER'
             ],
             outputType=gdal.GDT_Int16
@@ -26,4 +27,3 @@ def generate_cog(input_folder: str, input_filename: str, compress: str = 'LZW') 
     print(f"Raster saved to: {output_file}")
     
     return output_file
-

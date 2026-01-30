@@ -33,6 +33,10 @@ notebooks/temp_*
 notebooks/merge_*
 notebooks/provenance_*
 notebooks/cloud_*
+notebooks/band_non_clear_*
+notebooks/S2C_SCL_*
+notebooks/S2B_SCL_*
+notebooks/S2A_SCL_*
 *.zip
 S2_L2A-1
 clear_*

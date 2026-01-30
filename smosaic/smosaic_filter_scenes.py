@@ -1,21 +1,30 @@
 import os
-    
-from smosaic.smosaic_utils import find_grid_by_name
+import pyproj
+import tqdm
+import shapely
+import rasterio
+from pyproj import Transformer
 
+from rasterio.mask import mask as rasterio_mask
+from shapely.ops import transform
 
-def filter_scenes(collection, data_dir, bbox):
+from smosaic.smosaic_utils import find_grid_by_name, get_coverage_projection, load_jsons
 
-    #if (collection in ['S2_L2A-1','S2_L1C_BUNDLE-1']):
-    #    grid_data = find_grid_by_name("MGRS")
+def filter_scenes(collection, data_dir, geom):
+
+    if collection in ['S2_L2A-1','S2_L1C_BUNDLE-1']:
+        grid_data = find_grid_by_name("MGRS")
     
     list_dir = [item for item in os.listdir(os.path.join(data_dir, collection))
-            if os.path.isdir(os.path.join(data_dir, collection, item))]
+                if os.path.isdir(os.path.join(data_dir, collection, item))]
     
-    filtered_list = []
+    filtered_scenes = []
     
     for scene in list_dir:
-        #item = [item for item in grid_data["features"] if item["properties"]["name"] == scene]
-        #if (geometry_collides_with_bbox(shapely.geometry.shape(item[0]["geometry"]), bbox)):
-        filtered_list.append(scene)
-
-    return filtered_list
+        item = [item for item in grid_data["features"] if item["properties"]["name"] == scene]
+        if item:
+            grid_geom = shapely.geometry.shape(item[0]['geometry'])
+            if geom.intersects(grid_geom):
+                filtered_scenes.append(item[0]['properties']['name'])
+    
+    return filtered_scenes
