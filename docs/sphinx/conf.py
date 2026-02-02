@@ -26,6 +26,7 @@
 
 import sphinx_rtd_theme
 import sphinx_nefertiti
+from unittest.mock import MagicMock
 
 import os
 import sys
@@ -65,6 +66,13 @@ extensions = [
     "sphinx_nefertiti",
 ]
 
+# Napoleon settings
+napoleon_google_docstring = True
+napoleon_numpy_docstring = True
+napoleon_include_init_with_doc = True
+napoleon_include_private_with_doc = True
+napoleon_include_special_with_doc = True
+
 templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', 'LICENSE']
 
@@ -93,14 +101,13 @@ html_theme_options = {
     
     # Navigation and layout (these are supported)
     "header_links": [
-        {"text": "Índice", "link": "index"},
+        {"text": "Home", "link": "index"},
         {"text": "BIG", "link": "https://data.inpe.br/", "target": "_blank"},
         {"text": "BDC", "link": "https://data.inpe.br/bdc/", "target": "_blank"},
-        {"text": "Links", "link": "links"},
     ],
     
     # Logo settings (these are supported)
-    "logo": "logo-bdc.svg",
+    "logo": "logo-bdc2.svg",
     "logo_width": 65,
     "logo_height": 65,
     "logo_alt": "BDC/INPE",
