@@ -19,24 +19,6 @@
 smosaic API
 ===========
 
-.. automodule:: smosaic.smosaic_clip_raster
-   :members:
-
-.. automodule:: smosaic.smosaic_collection_get_data
-   :members:
-
-.. automodule:: smosaic.smosaic_collection_query
-   :members:
-
-.. automodule:: smosaic.smosaic_count_pixels
-   :members:
-
-.. automodule:: smosaic.smosaic_download_stream
-   :members:
-
-.. automodule:: smosaic.smosaic_filter_scenes
-   :members:
-
 .. automodule:: smosaic.smosaic_fix_baseline_number
    :members:
 
@@ -46,20 +28,41 @@ smosaic API
 .. automodule:: smosaic.smosaic_get_dataset_extents
    :members:
 
+.. automodule:: smosaic.smosaic_grid_crop
+   :members:
+
+.. automodule:: smosaic.smosaic_clip_raster
+   :members:
+
 .. automodule:: smosaic.smosaic_merge_scene
+   :members:
+
+.. automodule:: smosaic.smosaic_collection_get_data
    :members:
 
 .. automodule:: smosaic.smosaic_merge_tifs
    :members:
 
+.. automodule:: smosaic.smosaic_collection_query
+   :members:
+
 .. automodule:: smosaic.smosaic_mosaic
+   :members:
+
+.. automodule:: smosaic.smosaic_count_pixels
    :members:
 
 .. automodule:: smosaic.smosaic_reproject_tif
    :members:
 
+.. automodule:: smosaic.smosaic_download_stream
+   :members:
+
 .. automodule:: smosaic.smosaic_spectral_indices
    :members:
 
+.. automodule:: smosaic.smosaic_filter_scenes
+   :members:
+
 .. automodule:: smosaic.smosaic_utils
-    :members:
+   :members:

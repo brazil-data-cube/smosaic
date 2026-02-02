@@ -21,11 +21,81 @@ from smosaic.smosaic_merge_scene import merge_scene, merge_scene_provenance_clou
 from smosaic.smosaic_merge_tifs import merge_tifs
 from smosaic.smosaic_reproject_tif import reproject_tifs
 from smosaic.smosaic_spectral_indices import calculate_spectral_indices
-from smosaic.smosaic_utils import add_days_to_date, add_months_to_date, clean_dir, create_composition_json, days_between_dates, get_all_cloud_configs, load_jsons
+from smosaic.smosaic_utils import add_days_to_date, add_months_to_date, clean_dir, days_between_dates, get_all_cloud_configs, load_jsons
 
 
 def mosaic(name, data_dir, stac_url, collection, output_dir, start_year, start_month, start_day, mosaic_method, grid_crop=False, bands=None, reference_date=None, duration_days=None, end_year=None, end_month=None, end_day=None, duration_months=None, geom=None, grid=None, tile_id=None, bbox=None, profile=None, projection_output=4326):
+    """
+    Create satellite image mosaics using Brazil Data Cube collections.
     
+    This function generates temporal composites from Brazil Data Cube STAC collections by applying
+    specified mosaic composition function over defined time periods and spatial extents. It supports BDC's
+    grid systems, diferent projections, and composition function.
+    
+    Args:
+        name (str): Descriptive identifier for the output mosaic (used in file naming).
+        data_dir (str): Directory for storing intermediate data and processing artifacts.
+        stac_url (str): Brazil Data Cube STAC API endpoint URL (e.g., "https://data.inpe.br/bdc/stac/v1").
+        collection (str): BDC collection identifier (e.g., "S2_L2A-1").
+        output_dir (str): Destination directory for final mosaic products.
+        start_year (int): Initial year for temporal filtering (YYYY format).
+        start_month (int): Initial month for temporal filtering (1-12).
+        start_day (int): Initial day for temporal filtering (1-31).
+        mosaic_method (str): BDC mosaic composition function. Supported methods include:
+            - "lcf": Least Cloud-cover First - order by the least cloud-cover.
+            - "crono": Chronological - order chronologicaly.
+            - "ctd": Closest to Date - order by the closest image to reference date.
+        grid_crop (bool, optional): Enable cropping to BDC grid tile boundaries. Defaults to False.
+        bands (list, optional): Spectral bands to include (e.g., ["B02","B03","B04","B8A"]).
+        reference_date (str, optional): Reference date for the Closest to Date composition function. 
+            (format: 'YYYY-MM-DD').
+        duration_days (int, optional): Temporal window length in days from start date (day/month/year). 
+        end_year (int, optional): Explicit end year for temporal range (YYYY format). Defaults to None.
+        end_month (int, optional): Explicit end month for temporal range (1-12). Defaults to None.
+        end_day (int, optional): Explicit end day for temporal range (1-31). Defaults to None.
+        duration_months (int, optional): Temporal window length in months  from start date (day/month/year).
+        geom (str/dict, optional): GeoJSON geometry defining Area of Interest (AOI).
+            Defaults to None.
+        grid (str, optional): BDC grid system identifier. Supported grids include:
+            - "BDC_SM_V2": Brazil Data Cube Small Grid.
+            Defaults to None.
+        tile_id (str, optional): BDC grid tile identifier (6-digit code, e.g., "020019"). 
+            Requires grid parameter. Defaults to None.
+        bbox (list/tuple, optional): Bounding box coordinates [min_lon, min_lat, max_lon, max_lat].
+        profile (dict, optional): Profile band and spectral indices: selector.
+            Overrides bands parameters (e.g., "urban_analysis" or "crop_condition")..
+        projection_output (int/str, optional): Output coordinate reference system. Options:
+            - EPSG codes: 4326 (WGS84), 5880 (SIRGAS 2000 Brazil Polyconic)
+            - BDC codes: "BDC" (Brazil Data Cube Standard Grid projection)
+            Defaults to 4326.
+
+    Example:
+        >>> import os
+        >>> from smosaic import mosaic
+        >>> 
+        >>> stac_url = "https://data.inpe.br/bdc/stac/v1"
+        >>> 
+        >>> result = mosaic(
+        ...     name="MT",
+        ...     data_dir=os.path.abspath(""),
+        ...     stac_url=stac_url,
+        ...     collection="S2_L2A-1",
+        ...     grid="BDC_SM_V2",
+        ...     tile_id="020019",
+        ...     projection_output="BDC",
+        ...     output_dir=os.path.join("output"),   
+        ...     mosaic_method="lcf", 
+        ...     start_year=2026,
+        ...     start_month=1,
+        ...     start_day=1,
+        ...     duration_days=16, 
+        ...     bands=["B02","B03","B04"]
+        ... )
+    
+    Returns:
+        str: Path to the generated mosaic file.
+    
+    """
     clean_dir(data_dir)
 
     stac = pystac_client.Client.open(stac_url)

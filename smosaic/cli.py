@@ -16,7 +16,7 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/gpl-3.0.html>.
 #
 
-"""Command line interface for the WLTS client."""
+"""Command line interface for the smosaic client."""
 
 import click
 
@@ -93,8 +93,19 @@ def cli(config, stac_url):
               type=click.Path(exists=True, dir_okay=False, path_type=str),
               help='Grid definition file')
 
-@click.option('--grid-id',
-              help='Grid cell identifier')
+@click.option('--grid_crop',
+              is_flag=True,
+              required=False,
+              help='Grid crop check definition')
+
+@click.option('--projection_output',
+              type=int, 
+              required=False,
+              help='Projection output definition')
+
+@click.option('--tile_id',
+              help='Tile cell identifier')
+
 @click.option('--band',
               'bands',
               multiple=True,
@@ -122,7 +133,9 @@ def mosaic(
     duration_months,
     geom,
     grid,
-    grid_id,
+    tile_id,
+    grid_crop,
+    projection_output,
     bbox,
     profile,
 ):
@@ -162,7 +175,9 @@ def mosaic(
         duration_months=duration_months,
         geom=geom,
         grid=grid,
-        grid_id=grid_id,
+        grid_id=tile_id,
+        grid_crop=grid_crop,
+        projection_output=projection_output,
         bbox=bbox,
         profile=profile,
     )
