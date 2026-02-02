@@ -19,49 +19,55 @@
 smosaic API
 ===========
 
-.. automodule:: smosaic.smosaic_fix_baseline_number
-   :members:
-
-.. automodule:: smosaic.smosaic_generate_cog
-   :members:
-
-.. automodule:: smosaic.smosaic_get_dataset_extents
-   :members:
-
-.. automodule:: smosaic.smosaic_grid_crop
-   :members:
-
-.. automodule:: smosaic.smosaic_clip_raster
-   :members:
-
-.. automodule:: smosaic.smosaic_merge_scene
-   :members:
-
-.. automodule:: smosaic.smosaic_collection_get_data
-   :members:
-
-.. automodule:: smosaic.smosaic_merge_tifs
-   :members:
-
-.. automodule:: smosaic.smosaic_collection_query
-   :members:
+Mosaic Creation
+---------------
 
 .. automodule:: smosaic.smosaic_mosaic
    :members:
 
-.. automodule:: smosaic.smosaic_count_pixels
-   :members:
+Data Collection
+---------------
 
-.. automodule:: smosaic.smosaic_reproject_tif
+.. automodule:: smosaic.smosaic_collection_get_data
    :members:
 
 .. automodule:: smosaic.smosaic_download_stream
    :members:
 
+Raster Processing
+-----------------
+
+.. automodule:: smosaic.smosaic_filter_scenes
+   :members:
+   
+.. automodule:: smosaic.smosaic_count_pixels
+   :members:
+   
+.. automodule:: smosaic.smosaic_reproject_tif
+   :members:
+   
+.. automodule:: smosaic.smosaic_merge_scene
+   :members:
+   
+.. automodule:: smosaic.smosaic_get_dataset_extents
+   :members:
+   
+.. automodule:: smosaic.smosaic_merge_tifs
+   :members:
+
+.. automodule:: smosaic.smosaic_clip_raster
+   :members:
+
+.. automodule:: smosaic.smosaic_fix_baseline_number
+   :members:
+
+.. automodule:: smosaic.smosaic_generate_cog
+   :members:
+   
 .. automodule:: smosaic.smosaic_spectral_indices
    :members:
 
-.. automodule:: smosaic.smosaic_filter_scenes
+.. automodule:: smosaic.smosaic_grid_crop
    :members:
 
 .. automodule:: smosaic.smosaic_utils

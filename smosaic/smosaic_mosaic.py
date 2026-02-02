@@ -41,7 +41,7 @@ def mosaic(name, data_dir, stac_url, collection, output_dir, start_year, start_m
         start_year (int): Initial year for temporal filtering (YYYY format).
         start_month (int): Initial month for temporal filtering (1-12).
         start_day (int): Initial day for temporal filtering (1-31).
-        mosaic_method (str): BDC mosaic composition function. Supported methods include:
+        mosaic_method (str): Mosaic composition function. Supported methods include:
             - "lcf": Least Cloud-cover First - order by the least cloud-cover.
             - "crono": Chronological - order chronologicaly.
             - "ctd": Closest to Date - order by the closest image to reference date.
@@ -63,7 +63,7 @@ def mosaic(name, data_dir, stac_url, collection, output_dir, start_year, start_m
             Requires grid parameter. Defaults to None.
         bbox (list/tuple, optional): Bounding box coordinates [min_lon, min_lat, max_lon, max_lat].
         profile (dict, optional): Profile band and spectral indices: selector.
-            Overrides bands parameters (e.g., "urban_analysis" or "crop_condition")..
+            Overrides bands parameters (e.g., "urban_analysis" or "crop_condition").
         projection_output (int/str, optional): Output coordinate reference system. Options:
             - EPSG codes: 4326 (WGS84), 5880 (SIRGAS 2000 Brazil Polyconic)
             - BDC codes: "BDC" (Brazil Data Cube Standard Grid projection)

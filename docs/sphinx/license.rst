@@ -21,6 +21,7 @@ License
 
 
 .. include:: ../../LICENSE
+   :literal:
 
 
 Contact

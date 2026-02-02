@@ -12,8 +12,19 @@ except ImportError:
 from smosaic.smosaic_utils import get_all_cloud_configs
 
 def merge_tifs(tif_files, output_path, band, path_row=None, extent=None):
-    """Merge multiple TIFF files into a single TIFF file."""
+    """
+    Merge multiple TIFF files into a single TIFF file using GDAL merge.
     
+    Args:
+        tif_files (list): List of input TIFF file paths to merge.
+        output_path (str): Path for the output merged TIFF file.
+        band (str): Spectral band identifier for the merged output.
+        path_row (str, optional): Path/row identifier for satellite data organization.
+            Defaults to None.
+        extent (tuple/list, optional): Spatial extent for the merged output as
+            [minx, miny, maxx, maxy]. If None, uses the combined extent of all input files.
+            Defaults to None.
+    """
     cloud_dict = get_all_cloud_configs()
     if any(config['cloud_band'] == band for config in cloud_dict.values()):
         nodata = next((config['no_data_value'] for config in cloud_dict.values() 

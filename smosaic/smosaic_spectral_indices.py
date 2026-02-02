@@ -175,6 +175,14 @@ def ndbi_calc(swir_path, nir_path, compress='LZW'):
         print(f"Raster saved to: {str(file_name)}")
 
 def calculate_spectral_indices(input_folder: str, spectral_indices) -> str:
+    """
+    Calculate spectral indices from raster data, used with profile "urban_analysis" or "crop_condition".
+    
+    Args:
+        input_folder (str): Directory path containing the input raster files for index calculation.
+        spectral_indices (list): List of spectral indices to calculate.
+            Each element is a string identifier of a spectral index (e.g., "NDVI", "EVI", "EVI2", "SAVI").
+    """
     for spectral_indice in spectral_indices:
 
         if spectral_indice == "NDVI":

@@ -10,7 +10,19 @@ from smosaic.smosaic_utils import get_all_cloud_configs
 
 
 def collection_get_data(stac, datacube, data_dir):
+    """
+    Fetch and download data from a STAC collection based on specified parameters.
     
+    Args:
+        stac (str): Brazil Data Cube STAC API endpoint URL (e.g., "https://data.inpe.br/bdc/stac/v1").
+        datacube (dict): Dictionary containing collection query parameters with the following keys:
+            collection (str): Identifier of the STAC collection to query.
+            start_date (str): Start date for temporal filtering in 'YYYY-MM-DD' format.
+            end_date (str): End date for temporal filtering in 'YYYY-MM-DD' format.
+            bbox (list/tuple): Bounding box coordinates [minx, miny, maxx, maxy] for spatial filtering.
+            bands (list, optional): List of band identifiers to include in the download.
+        data_dir (str): Directory path where the downloaded data will be stored.
+    """
     collection = datacube['collection']
     bbox = datacube['bbox']
     start_date = datacube['start_date']

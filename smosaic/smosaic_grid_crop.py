@@ -20,7 +20,16 @@ from pyproj import Transformer
 
 def get_tiles_intersecting_tif(tif_path, grid, projection_output):
     """
-    Identifies tiles from a grid definition that intersect with a GeoTIFF.
+    Identify grid tiles that intersect with a given GeoTIFF file's spatial extent.
+    
+    Args:
+        tif_path (str): Path to the input GeoTIFF file.
+        grid (str, optional): BDC grid system identifier. Supported grids include:
+            - "BDC_SM_V2": Brazil Data Cube Small Grid.
+        projection_output (int/str, optional): Output coordinate reference system. Options:
+            - EPSG codes: 4326 (WGS84), 5880 (SIRGAS 2000 Brazil Polyconic)
+            - BDC codes: "BDC" (Brazil Data Cube Standard Grid projection)
+            Defaults to 4326.
     """
     
     grid_data = None
@@ -63,12 +72,18 @@ def get_tiles_intersecting_tif(tif_path, grid, projection_output):
 
 def clip_from_grid(input_folder, grid, tile_id, projection_output):
     """
-    Clip images in input_folder according to grid and tile specifications
+    Clip raster data from a specified grid tile within a given grid system.
     
     Args:
-        input_folder (str): Folder containing input TIFF files
-        grid (str): Grid name
-        tile_id (str): Tile ID (if None, find intersecting tiles)
+        input_folder (str): Directory path containing the input raster files to clip.
+        grid (str, optional): BDC grid system identifier. Supported grids include:
+            - "BDC_SM_V2": Brazil Data Cube Small Grid.
+        tile_id (str, optional): BDC grid tile identifier (6-digit code, e.g., "020019"). 
+            Requires grid parameter. Defaults to None.
+        projection_output (int/str, optional): Output coordinate reference system. Options:
+            - EPSG codes: 4326 (WGS84), 5880 (SIRGAS 2000 Brazil Polyconic)
+            - BDC codes: "BDC" (Brazil Data Cube Standard Grid projection)
+            Defaults to 4326.
     """
     
     uncropped_tifs = [

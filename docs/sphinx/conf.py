@@ -39,7 +39,9 @@ sys.path.insert(0, os.path.abspath("../.."))
 project = 'smosaic'
 copyright = 'GNU General Public License, v3.0.'
 author = "Brazil Data Cube (BDC)"
+autosummary_generate = False
 # release = smosaic.__version__
+
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -64,7 +66,7 @@ extensions = [
 ]
 
 templates_path = ['_templates']
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', 'LICENSE']
 
 
 
@@ -75,68 +77,46 @@ html_theme = "sphinx_nefertiti"
 html_static_path = ['_static']
 
 html_theme_options = {
-    "sans_serif_font": "Ubuntu Sans",
-    "documentation_font": "Open Sans",
-    "monospace_font": "Fira Code",
-    "project_name_font": "Nunito",
-    "doc_headers_font": "Georgia",
-    "documentation_font_size": "1.3rem",
-    "monospace_font_size": "1.2rem",
-    "style": "blue",
+    # Font settings (these are supported)
+    "sans_serif_font": "open sans",
+    "documentation_font": "open sans", 
+    "monospace_font": "fira code",
+    "project_name_font": "nunito",
+    "doc_headers_font": "nunito",
+    "documentation_font_size": "1rem",
+    "monospace_font_size": "0.9375rem",
+    
+    # Style and color settings (these are supported)
+    "style": "blue",  # Options: blue, darkblue, purple, green, etc.
     "pygments_light_style": "pastie",
     "pygments_dark_style": "dracula",
+    
+    # Navigation and layout (these are supported)
     "header_links": [
-        {
-            "text": "Índice",
-            "link": "index",
-        },
-        # {
-        #     "text": "Tutoriais",
-        #     "dropdown": [
-        #         {"text": "Geoserver", "link": "geoserver/index"},
-        #         # {"text": "Infra", "link": "infra/index"},
-        #     ],
-        # },
-        {
-            "text": "BIG",
-            "link": "https://data.inpe.br/",
-            "target": "_blank",
-        },
-        {
-            "text": "BDC",
-            "link": "https://data.inpe.br/bdc/",
-            "target": "_blank",
-        },
-        {
-            "text": "Links",
-            "link": "links",
-        },
+        {"text": "Índice", "link": "index"},
+        {"text": "BIG", "link": "https://data.inpe.br/", "target": "_blank"},
+        {"text": "BDC", "link": "https://data.inpe.br/bdc/", "target": "_blank"},
+        {"text": "Links", "link": "links"},
     ],
+    
+    # Logo settings (these are supported)
     "logo": "logo-bdc.svg",
     "logo_width": 65,
     "logo_height": 65,
     "logo_alt": "BDC/INPE",
+    
+    # Footer settings (these are supported)
     "footer_links": [
-        {
-            "text": "Documentação BDC",
-            "link": "https://brazil-data-cube.github.io/index.html",
-        },
-        {
-            "text": "GitHub",
-            "link": "https://github.com/brazil-data-cube/",
-        },
-        {
-            "text": "Discord",
-            "link": "https://discord.gg/enS8GdY6",
-        },
+        {"text": "Documentação BDC", "link": "https://brazil-data-cube.github.io/index.html"},
+        {"text": "GitHub", "link": "https://github.com/brazil-data-cube/"},
+        {"text": "Discord", "link": "https://discord.gg/enS8GdY6"},
     ],
-
+    
+    # Repository settings (these are supported)
     "repository_url": "https://github.com/brazil-data-cube/smosaic",
     "repository_name": "smosaic",
-
     "docs_repository_url": "https://github.com/brazil-data-cube/smosaic/tree/main/docs/sphinx/",
 }
-
 
 html_css_files = [
     "custom.css",

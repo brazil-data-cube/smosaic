@@ -4,7 +4,19 @@ from osgeo import gdal
 from smosaic.smosaic_utils import COVERAGE_PROJ
 
 def reproject_tifs(sorted_data, cloud_sorted_data, data_dir, projection_output):
+    """
+    Reproject a list of TIFF files and their corresponding cloud mask files to a target coordinate system.
     
+    Args:
+        sorted_data (list): List of raster files sorted by the mosaic composition function.
+            Each element contains file metadata including date, scene, band, and sorting function.
+        cloud_sorted_data (list): List of cloud cover data files sorted by the mosaic composition function.
+            Used for cloud scene in mosaic generation.
+        data_dir (str): Directory path where reprojected files will be saved.
+        projection_output (int/str): Output coordinate reference system. Options:
+            - EPSG codes: 4326 (WGS84), 5880 (SIRGAS 2000 Brazil Polyconic)
+            - BDC codes: "BDC" (Brazil Data Cube Standard Grid projection)
+    """
     images =  [item['file'] for item in sorted_data]
     cloud_images = [item['file'] for item in cloud_sorted_data]
 

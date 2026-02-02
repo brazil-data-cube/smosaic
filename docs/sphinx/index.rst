@@ -50,7 +50,7 @@ Project
 
 
 How to collaborate
-******************
+==================
 
 If something is not working, or if there is wrong or missing information in the documentation, or
 if you would like to suggest an idea or improvement, please, create an entry in the `issues page <https://github.com/brazil-data-cube/smosaic/issues>`_ of smosaic repository and explain the details.

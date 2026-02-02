@@ -13,7 +13,28 @@ from smosaic.smosaic_utils import COVERAGE_PROJ, load_jsons
 
 
 def clip_raster(input_raster_path, output_folder, clip_geometry, projection_output, output_filename=None, grid=None, tile_id=None):
+    """
+    Extract a spatial subset from a raster file using a geometry or grid tile.
     
+    Args:
+        input_raster_path (str): Full path to the input raster file (GeoTIFF format).
+        output_folder (str): Directory path where the clipped raster will be saved.
+        clip_geometry (shapely.geometry): Spatial boundary for clipping.
+        projection_output (int/str, optional): Output coordinate reference system. Options:
+            - EPSG codes: 4326 (WGS84), 5880 (SIRGAS 2000 Brazil Polyconic)
+            - BDC codes: "BDC" (Brazil Data Cube Standard Grid projection)
+            Defaults to 4326.
+        output_filename (str, optional): Custom name for output file (without directory path).
+            If None, generated from input filename and clip parameters. Defaults to None.
+        grid (str, optional): BDC grid system identifier. Supported grids include:
+            - "BDC_SM_V2": Brazil Data Cube Small Grid.
+            Defaults to None.
+        tile_id (str, optional): BDC grid tile identifier (6-digit code, e.g., "020019"). 
+            Requires grid parameter. Defaults to None.
+    
+    Returns:
+        str: Absolute path to the generated clipped raster file.
+    """
     using_grid = False
     if grid and tile_id:
         if grid == "BDC_SM_V2":

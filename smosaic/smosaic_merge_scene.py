@@ -12,7 +12,23 @@ from smosaic.smosaic_utils import clean_dir, get_all_cloud_configs
 
 
 def merge_scene(sorted_data, cloud_sorted_data, scenes, collection_name, band, data_dir, start_date=None, end_date=None):
-
+    """
+    Merge and organize raster scenes based on mosaic composition function and cloud cover data.
+    
+    Args:
+        sorted_data (list): List of raster files sorted by the mosaic composition function.
+            Each element contains file metadata including date, scene, band, and sorting function.
+        cloud_sorted_data (list): List of cloud cover data files sorted by the mosaic composition function..
+            Used for cloud-aware scene selection in mosaic generation.
+        scenes (list): List of scene identifiers to be processed.
+        collection_name (str): Name of the collection or dataset being processed.
+        band (str): Spectral band identifier being processed.
+        data_dir (str): Directory path where scene data is stored.
+        start_date (str, optional): Start date for temporal filtering in 'YYYY-MM-DD' format.
+            Defaults to None.
+        end_date (str, optional): End date for temporal filtering in 'YYYY-MM-DD' format.
+            Defaults to None.
+    """
     temp_images = []
 
     merge_files = []
@@ -143,7 +159,23 @@ def merge_scene(sorted_data, cloud_sorted_data, scenes, collection_name, band, d
     return dict(merge_files=merge_files)
 
 def merge_scene_provenance_cloud(sorted_data, cloud_sorted_data, scenes, collection_name, band, data_dir, start_date=None, end_date=None):
-
+    """
+    Merge and organize raster scenes, including cloud band and provenance data, based on mosaic composition function.
+    
+    Args:
+        sorted_data (list): List of raster files sorted by the mosaic composition function.
+            Each element contains file metadata including date, scene, band, and sorting function.
+        cloud_sorted_data (list): List of cloud cover data files sorted by the mosaic composition function.
+            Used for cloud scene in mosaic generation.
+        scenes (list): List of scene identifiers to be processed.
+        collection_name (str): Name of the collection or dataset being processed.
+        band (str): Spectral band identifier being processed.
+        data_dir (str): Directory path where scene data is stored.
+        start_date (str, optional): Start date for temporal filtering in 'YYYY-MM-DD' format.
+            Defaults to None.
+        end_date (str, optional): End date for temporal filtering in 'YYYY-MM-DD' format.
+            Defaults to None.
+    """
     temp_images = []
     provenance_temp_images = []
     temp_cloud_images = []

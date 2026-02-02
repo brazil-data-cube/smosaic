@@ -109,7 +109,15 @@ def get_coverage_projection() -> pyproj.CRS:
 
 
 def open_geojson(file_path):
+    """
+    Load and convert a GeoJSON file to a shapely geometry object.
     
+    Args:
+        file_path (str): Path to the GeoJSON file to be loaded.
+    
+    Returns:
+        shapely.geometry.base.BaseGeometry: A shapely geometry object representing the geometry in the GeoJSON file.
+    """
     geojson_data = json.load(open(file_path, 'r', encoding='utf-8'))
 
     return shapely.geometry.shape(geojson_data["features"][0]["geometry"]) if geojson_data["type"] == "FeatureCollection" else shapely.geometry.shape(geojson_data)
