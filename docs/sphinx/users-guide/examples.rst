@@ -22,20 +22,10 @@ Examples
 ========
 
 
-smosaic data cubes
-------------------
-
-
-This example shows the list of collections in a service:
-
-.. literalinclude:: ../../../examples/smosaic-data-cube.py
-   :language: python
-   :lines: 02-
-
 smosaic mosaic
 --------------
 
-This example shows the list of collections in a service:
+Example of creating RGB mosaics  on the BDC_SM_V2 grid for a tile in Mato Grosso state
 
 .. literalinclude:: ../../../examples/smosaic-mosaic.py
    :language: python
