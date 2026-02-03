@@ -19,7 +19,7 @@
 Changes
 =======
 
-0.7.0 (2026-02-02)
+0.7.0 (2026-02-03)
 ------------------
 
 * **Cloud Mask Handling**: Resolved a bug in the ``merge_tifs()`` function to properly handle "No Data" values in the output cloud mask, ensuring seamless mosaic mask generation.
