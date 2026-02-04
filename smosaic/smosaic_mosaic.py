@@ -43,7 +43,7 @@ def mosaic(name, data_dir, stac_url, collection, output_dir, start_year, start_m
         start_day (int): Initial day for temporal filtering (1-31).
         mosaic_method (str): Mosaic composition function. Supported methods include:
             - "lcf": Least Cloud-cover First - order by the least cloud-cover.
-            - "crono": Chronological - order chronologicaly.
+            - "chrono": Chronological - order chronologicaly.
             - "ctd": Closest to Date - order by the closest image to reference date.
         grid_crop (bool, optional): Enable cropping to BDC grid tile boundaries. Defaults to False.
         bands (list, optional): Spectral bands to include (e.g., ["B02","B03","B04","B8A"]).
@@ -327,7 +327,7 @@ def process_period(period, mosaic_method, data_dir, collection_name, bands, bbox
 
             cloud_sorted_data = sorted(cloud_list, key=lambda x: x['clean_percentage'], reverse=True)
             
-        if (mosaic_method=='crono'):
+        if (mosaic_method=='chrono'):
 
             sorted_data = sorted(band_list, key=lambda x: x['date'])
 
