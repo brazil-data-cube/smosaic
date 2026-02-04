@@ -28,7 +28,7 @@ Changes
 * **Filter_scenes Function**: Redesigned the ``filter_scenes`` function now use the geometry of grid or bbox to filter the downloaded images for scenes that intersect mosaic region.
 * **Mosaic Generation Algorithm Refactor**: Completely refactored the ``merge_scene()`` function, implementing a new merging logic based on NumPy arrays and binary mask filling to improve mosaic composition.
 * **New Example Notebook**: Added experimental Jupyter notebooks for function demonstrations:
-    * ``smosaic-bdc-tile``: Example of creating RGB mosaics  on the BDC_SM_V2 grid for a tile in Mato Grosso state
+    * ``smosaic-introduction``: Example of creating RGB mosaics  on the BDC_SM_V2 grid for a tile in Mato Grosso state
 * **Documentation**: Added comprehensive Sphinx documentation with API reference for all functions, usage examples, and detailed parameter descriptions.
 * **Command Line Interface**: Added a CLI (Command Line Interface) using Click framework, providing command-line access to mosaic generation with configurable options.
 
