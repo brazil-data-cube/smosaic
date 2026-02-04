@@ -19,10 +19,15 @@ setup(
     },
     include_package_data=True,
     version = VERSION,
+    entry_points={
+        'console_scripts': [
+            "smosaic=smosaic.cli:cli",
+        ],
+    },
     description='Simple python package for creating satellite image mosaics based on Brazil Data Cube',
     author='Gabriel Sansigolo',
     author_email = "gabrielsansigolo@gmail.com",
-    url = "https://github.com/GSansigolo/smosaic",
+    url = "https://github.com/brazil-data-cube/smosaic",
     install_requires= [
         "numpy==2.3.4",
         "tqdm==4.67.1",

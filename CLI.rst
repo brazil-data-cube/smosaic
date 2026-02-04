@@ -17,6 +17,35 @@
 
 
 Running smosaic in the Command Line
-=======================================
+===================================
 
-WIP
+The ``smosaic`` package installs a command line tool named ``smosaic`` that allows 
+users to generate spatiotemporal mosaics from STAC-compliant data sources.
+
+
+If you want to know the smosaic version, use the option ``--version``::
+
+    smosaic --version
+
+
+Mosaic command
+--------------
+
+The main command provided by the CLI is ``mosaic``, which generates a mosaic for a
+given spatial extent, time range, and collection.
+
+A minimal example is shown below::
+
+    smosaic mosaic \
+      --name sao-paulo \
+      --collection S2_L2A-1 \
+      --mosaic-method lcf \
+      --start-year 2024 \
+      --start-month 1 \
+      --start-day 1 \
+      --duration-months 1 \
+      --bbox "-46.6507,-23.9681,-46.2772,-23.5992" \
+      --band B02 \
+      --band B03 \
+      --band B04 \
+      --profile urban_analysis

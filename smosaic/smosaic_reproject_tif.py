@@ -1,45 +1,80 @@
 import os
-import rasterio
-from rasterio.warp import calculate_default_transform, reproject, Resampling
 import pyproj
-import numpy as np
-
+from osgeo import gdal
 from smosaic.smosaic_utils import COVERAGE_PROJ
 
-def reproject_tif(input_folder: str, input_filename: str):
+def reproject_tifs(sorted_data, cloud_sorted_data, data_dir, projection_output):
+    """
+    Reproject a list of TIFF files and their corresponding cloud mask files to a target coordinate system.
+    
+    Args:
+        sorted_data (list): List of raster files sorted by the mosaic composition function.
+            Each element contains file metadata including date, scene, band, and sorting function.
+        cloud_sorted_data (list): List of cloud cover data files sorted by the mosaic composition function.
+            Used for cloud scene in mosaic generation.
+        data_dir (str): Directory path where reprojected files will be saved.
+        projection_output (int/str): Output coordinate reference system. Options:
+            - EPSG codes: 4326 (WGS84), 5880 (SIRGAS 2000 Brazil Polyconic)
+            - BDC codes: "BDC" (Brazil Data Cube Standard Grid projection)
+    """
+    images =  [item['file'] for item in sorted_data]
+    cloud_images = [item['file'] for item in cloud_sorted_data]
 
-    input_file = os.path.join(input_folder, f'{input_filename}_COG.tif')
-    output_file = os.path.join(input_folder, f'{input_filename}_COG.tif')
+    if projection_output == "BDC":
+        x_res, y_res = 10, -10
+    else:
+        x_res, y_res = None, None
 
-    with rasterio.open(input_file) as src:
-        transform, width, height = calculate_default_transform(
-            src.crs,  
-            COVERAGE_PROJ, 
-            src.width,  
-            src.height, 
-            *src.bounds 
+    for i in range(0, len(images)):
+        image_filename = images[i].split('/')[-1].split('.')[0]
+        output_file = os.path.join(data_dir, f'{image_filename}_reprojected.tif')
+        src_ds = gdal.Open(images[i])
+        src_nodata = src_ds.GetRasterBand(1).GetNoDataValue()
+        
+        if projection_output == "BDC":
+            dst_wkt = COVERAGE_PROJ
+        else:
+            dst_crs = pyproj.CRS.from_epsg(projection_output)
+            dst_wkt = dst_crs.to_wkt()
+
+        warp_options = gdal.WarpOptions(
+            format='GTiff',
+            dstSRS=dst_wkt,
+            srcNodata=src_nodata,
+            dstNodata=src_nodata,
+            resampleAlg=gdal.GRA_NearestNeighbour,
+            xRes=x_res,     
+            yRes=y_res      
         )
         
-        transform = rasterio.Affine(10, transform.b, transform.c,
-                                   transform.d, -10, transform.f)
-        
-        kwargs = src.meta.copy()
-        kwargs.update({
-            'crs': COVERAGE_PROJ,
-            'transform': transform,
-            'width': width,
-            'height': height
-        })
-        
-        with rasterio.open(output_file, 'w', **kwargs) as dst:
-            for i in range(1, src.count + 1):
-                reproject(
-                    source=rasterio.band(src, i),
-                    destination=rasterio.band(dst, i),
-                    src_transform=src.transform,
-                    src_crs=src.crs,
-                    dst_transform=transform,
-                    dst_crs=COVERAGE_PROJ,
-                    resampling=Resampling.bilinear
-                )
+        gdal.Warp(output_file, src_ds, options=warp_options)
+        src_ds = None
+        sorted_data[i]['file'] = output_file
     
+    for i in range(0, len(cloud_images)):
+        image_filename = cloud_images[i].split('/')[-1].split('.')[0]
+        output_file = os.path.join(data_dir, f'{image_filename}_reprojected.tif')
+        src_ds = gdal.Open(cloud_images[i])
+        src_nodata = src_ds.GetRasterBand(1).GetNoDataValue()
+        
+        if projection_output == "BDC":
+            dst_wkt = COVERAGE_PROJ
+        else:
+            dst_crs = pyproj.CRS.from_epsg(projection_output)
+            dst_wkt = dst_crs.to_wkt()
+
+        warp_options = gdal.WarpOptions(
+            format='GTiff',
+            dstSRS=dst_wkt,
+            srcNodata=src_nodata,
+            dstNodata=src_nodata,
+            resampleAlg=gdal.GRA_NearestNeighbour,
+            xRes=x_res,      
+            yRes=y_res    
+        )
+        
+        gdal.Warp(output_file, src_ds, options=warp_options)
+        src_ds = None
+        cloud_sorted_data[i]['file'] = output_file
+    
+    return dict(reprojected_images=sorted_data, reprojected_cloud_images=cloud_sorted_data)
