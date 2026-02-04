@@ -15,7 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with this program. If not, see <https://www.gnu.org/licenses/gpl-3.0.html>.
 
-.. image:: https://raw.githubusercontent.com/GSansigolo/smosaic/main/docs/img/smosaic_logo.png
+.. image:: https://raw.githubusercontent.com/brazil-data-cube/smosaic/main/docs/img/smosaic_logo.png
    :width: 350
    :align: center
    :alt: smosaic logo
@@ -26,16 +26,22 @@ Simple python package for creating satellite image mosaics based on Brazil Data 
 
 
 .. image:: https://img.shields.io/badge/License-GPLv3-blue.svg
-        :target: https://github.com/GSansigolo/smosaic/blob/master/LICENSE
+        :target: https://github.com/brazil-data-cube/smosaic/blob/master/LICENSE
         :alt: Software License
+
+
+.. image:: https://readthedocs.org/projects/smosaic/badge/?version=latest
+        :target: https://smosaic.readthedocs.io/en/latest/
+        :alt: Documentation Status
+
 
 .. image:: https://img.shields.io/badge/lifecycle-stable-green.svg
         :target: https://www.tidyverse.org/lifecycle/#stable
         :alt: Software Life Cycle
 
 
-.. image:: https://img.shields.io/github/tag/GSansigolo/smosaic.svg
-        :target: https://github.com/GSansigolo/smosaic/releases
+.. image:: https://img.shields.io/github/tag/brazil-data-cube/smosaic.svg
+        :target: https://github.com/brazil-data-cube/smosaic/releases
         :alt: Release
 
 
@@ -58,26 +64,26 @@ Simple python package for creating satellite image mosaics based on Brazil Data 
 Installation
 ============
 
-See `INSTALL.rst <./INSTALL.rst>`_
+See `Installation <https://smosaic.readthedocs.io/en/latest/users-guide/installation.html>`_.
 
 
 Changes
 =======
 
-See `CHANGES.rst <./CHANGES.rst>`_
+See `Changes <https://smosaic.readthedocs.io/en/latest/history.html>`_.
 
 
 Using smosaic in the Command Line
 =================================
 
-See `CLI.rst <./CLI.rst>`_.
+See `Command Line <https://smosaic.readthedocs.io/en/latest/users-guide/cli.html>`_.
 
 
 Documentation
 =============
 
 
-WIP
+See https://smosaic.readthedocs.io/en/latest.
 
 
 References
