@@ -75,11 +75,11 @@ Changes
 ------------------
 * **New Mosaic Build Methods**: Added two new scene ordering functions for mosaic generation:
     * ``ctd`` (Closest to Date): Build mosaics by selecting images closest to a reference date
-    * ``crono`` (Chronological): Build mosaics by ordering scenes by acquisition date
+    * ``chrono`` (Chronological): Build mosaics by ordering scenes by acquisition date
 * **Enhanced Mosaic Function**: The ``mosaic()`` function now supports three build methods:
     * ``lcf``: Least cloud cover first (existing)
     * ``ctd``: Closest to reference date (new)
-    * ``crono``: Chronological order (new)
+    * ``chrono``: Chronological order (new)
 * **New Utility Function**: Added ``days_between_dates()`` function in utils module for date interval calculations
 * **New Notebook**: Added example notebook:
     * ``smosaic-closest-to-date.ipynb``: A complete example of creating Sentinel-2 image mosaic by selecting images closest to a reference date
